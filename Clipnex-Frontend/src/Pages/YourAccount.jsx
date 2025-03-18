@@ -1,11 +1,7 @@
-import React from 'react'
+import React from "react";
 
 function YourAccount() {
-  return (
-    <div>
-      Your Account
-    </div>
-  )
+  return <div>Your Account</div>;
 }
 
-export default YourAccount
+export default YourAccount;

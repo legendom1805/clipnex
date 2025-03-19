@@ -125,3 +125,15 @@ export const updateVideoViews = async (videoId) => {
     throw error.response?.data || error;
   }
 };
+
+// Get channel videos
+export const getChannelVideos = async (username) => {
+  try {
+    const response = await api.get(`/videos/c/${username}`);
+    console.log("Channel videos response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching channel videos:", error);
+    throw error;
+  }
+};

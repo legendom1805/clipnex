@@ -14,6 +14,8 @@ import Settings from "./Pages/Settings.jsx";
 import SignUpPage from "./Pages/SignUpPage.jsx";
 import VideoPlayer from "./Pages/VideoPlayer.jsx";
 import Upload from "./Pages/Upload.jsx";
+import SearchResults from "./Pages/SearchResults.jsx";
+import Channel from "./Pages/Channel.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
 import "./index.css";
 import App from "./App.jsx";
@@ -31,6 +33,10 @@ const router = createBrowserRouter([
       {
         path: "/video/:videoId",
         element: <VideoPlayer />,
+      },
+      {
+        path: "/channel/:channelId",
+        element: <Channel />,
       },
       {
         path: "/upload",
@@ -75,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: "/dashboard",
         element: <YourAccount />,
+      },
+      {
+        path: "/search",
+        element: <SearchResults />,
       },
     ],
   },

@@ -33,14 +33,15 @@ function VideoPlayer() {
         setLoading(true);
         // Fetch video details
         const videoResponse = await getVideoDetails(videoId);
-        console.log('Video response:', videoResponse);
+        console.log('Raw video response:', videoResponse);
+        console.log('Video creator data:', videoResponse?.data?.createdBy);
 
         if (!videoResponse || !videoResponse.data) {
           throw new Error('No video data received');
         }
 
         const videoData = videoResponse.data;
-        console.log('Video data:', videoData);
+        console.log('Processed video data:', videoData);
         console.log('Creator data:', videoData.createdBy);
         setVideo(videoData);
         // Set initial like state
@@ -350,11 +351,46 @@ function VideoPlayer() {
 
           <div className="flex flex-wrap items-center gap-6 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className={subTextClass} size={24} />
+              <div 
+                onClick={() => {
+                  console.log('Clicked avatar, creator data:', video.createdBy);
+                  if (video.createdBy?.username) {
+                    console.log('Navigating to channel:', video.createdBy.username);
+                    navigate(`/channel/${video.createdBy.username}`);
+                  } else {
+                    console.log('No creator username available');
+                  }
+                }}
+                className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                {video.createdBy?.avatar ? (
+                  <img 
+                    src={video.createdBy.avatar}
+                    alt={video.createdBy.username || video.createdBy.fullname || 'Creator'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('Error loading creator avatar:', e);
+                      e.target.src = ''; // Clear the src to show fallback
+                      e.target.onerror = null; // Prevent infinite loop
+                    }}
+                  />
+                ) : (
+                  <User className={subTextClass} size={24} />
+                )}
               </div>
               <div>
-                <p className={`font-medium ${textClass}`}>
+                <p 
+                  onClick={() => {
+                    console.log('Clicked username, creator data:', video.createdBy);
+                    if (video.createdBy?.username) {
+                      console.log('Navigating to channel:', video.createdBy.username);
+                      navigate(`/channel/${video.createdBy.username}`);
+                    } else {
+                      console.log('No creator username available');
+                    }
+                  }}
+                  className={`font-medium ${textClass} cursor-pointer hover:text-purple-500 transition-colors`}
+                >
                   {video.createdBy ? (
                     video.createdBy.username || video.createdBy.fullname || 'Anonymous'
                   ) : (
@@ -363,7 +399,18 @@ function VideoPlayer() {
                   )}
                 </p>
                 {video.createdBy?.username && (
-                  <p className={`text-sm ${subTextClass}`}>
+                  <p 
+                    onClick={() => {
+                      console.log('Clicked username, creator data:', video.createdBy);
+                      if (video.createdBy?.username) {
+                        console.log('Navigating to channel:', video.createdBy.username);
+                        navigate(`/channel/${video.createdBy.username}`);
+                      } else {
+                        console.log('No creator username available');
+                      }
+                    }}
+                    className={`text-sm ${subTextClass} cursor-pointer hover:text-purple-500 transition-colors`}
+                  >
                     @{video.createdBy.username}
                   </p>
                 )}
@@ -387,12 +434,6 @@ function VideoPlayer() {
                 <Calendar className={subTextClass} size={20} />
                 <span className={subTextClass}>{formatDate(video.createdAt)}</span>
               </div>
-              {video.duration && (
-                <div className="flex items-center gap-2">
-                  <Clock className={subTextClass} size={20} />
-                  <span className={subTextClass}>{formatDuration(video.duration)}</span>
-                </div>
-              )}
             </div>
           </div>
 

@@ -8,7 +8,6 @@ function Settings() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, loading, theme } = useSelector((state) => state.auth);
-  // Get the actual user data from the nested structure
   const userData = user?.data;
 
   useEffect(() => {
@@ -46,93 +45,72 @@ function Settings() {
     );
   }
 
-  const containerClass = theme === 'dark'
-    ? 'bg-gray-900/50 border-gray-700'
-    : 'bg-white/50 border-gray-200';
-
-  const cardClass = theme === 'dark' 
-    ? 'bg-gray-800' 
-    : 'bg-white border border-gray-200';
-
-  const headingClass = theme === 'dark'
-    ? 'text-white'
-    : 'text-gray-900';
-
-  const subTextClass = theme === 'dark'
-    ? 'text-gray-300'
-    : 'text-gray-600';
-
-  const iconClass = theme === 'dark'
-    ? 'text-gray-300'
-    : 'text-gray-500';
-
-  const sectionClass = theme === 'dark'
-    ? 'bg-gray-700/50'
-    : 'bg-gray-50 border border-gray-200';
+  const containerClass = theme === "dark" ? "bg-darkbg" : "bg-white";
+  const textClass = theme === "dark" ? "text-white" : "text-gray-900";
+  const subTextClass = theme === "dark" ? "text-gray-300" : "text-gray-600";
+  const cardClass = theme === "dark" ? "bg-fadetext/25" : "bg-white";
+  const borderClass = theme === "dark" ? "border-wite-200" : "border-black-200";
 
   return (
-    <div className="min-h-screen flex items-start justify-center pt-24 px-4 pb-8">
-      <div className={`w-full max-w-3xl border rounded-xl p-8 shadow-lg ${containerClass}`}>
-        <h1 className={`text-3xl font-bold mb-8 ${headingClass}`}>Settings</h1>
-        
-        <div className={`${cardClass} rounded-xl p-8 mb-6 shadow-lg transition-colors duration-200`}>
-          <h2 className={`text-2xl font-semibold mb-6 ${headingClass}`}>Account Settings</h2>
-          <div className="space-y-6">
-            <div className="flex flex-col gap-6">
-              <div className={`flex items-center gap-4 p-4 rounded-lg ${sectionClass}`}>
-                <UserIcon className={iconClass} size={24} />
-                <div>
-                  <p className={`font-medium text-lg ${headingClass}`}>Logged in as</p>
-                  <p className={`text-lg ${subTextClass}`}>{userData.username}</p>
-                </div>
+    <div className={`min-h-screen ${containerClass} py-8 px-4 md:px-8`}>
+      <div className="max-w-3xl mx-auto">
+        <h1 className={`text-2xl font-bold mb-8 ${textClass}`}>Settings</h1>
+
+        {/* Account Information */}
+        <div className={`${cardClass} rounded-lg p-6 shadow-lg ${borderClass} border mb-6`}>
+          <h2 className={`text-xl font-semibold mb-4 ${textClass}`}>Account Information</h2>
+          <div className="space-y-4">
+            <div className={`flex items-center gap-4 p-4 rounded-lg border ${borderClass}`}>
+              <UserIcon className={subTextClass} size={20} />
+              <div>
+                <p className={`font-medium ${textClass}`}>Username</p>
+                <p className={subTextClass}>{userData.username}</p>
               </div>
-              <div className={`flex items-center gap-4 p-4 rounded-lg ${sectionClass}`}>
-                <MailIcon className={iconClass} size={24} />
-                <div>
-                  <p className={`font-medium text-lg ${headingClass}`}>Email</p>
-                  <p className={`text-lg ${subTextClass}`}>{userData.email}</p>
-                </div>
+            </div>
+            <div className={`flex items-center gap-4 p-4 rounded-lg border ${borderClass}`}>
+              <MailIcon className={subTextClass} size={20} />
+              <div>
+                <p className={`font-medium ${textClass}`}>Email</p>
+                <p className={subTextClass}>{userData.email}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={`${cardClass} rounded-xl p-8 mb-6 shadow-lg transition-colors duration-200`}>
-          <h2 className={`text-2xl font-semibold mb-6 ${headingClass}`}>Appearance</h2>
-          <div className="space-y-4">
-            <div className={`flex items-center justify-between p-4 rounded-lg ${sectionClass}`}>
-              <div className="flex items-center gap-4">
-                {theme === 'dark' ? (
-                  <MoonIcon className={iconClass} size={24} />
-                ) : (
-                  <SunIcon className={iconClass} size={24} />
-                )}
-                <div>
-                  <p className={`font-medium text-lg ${headingClass}`}>Theme</p>
-                  <p className={subTextClass}>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</p>
-                </div>
+        {/* Appearance Settings */}
+        <div className={`${cardClass} rounded-lg p-6 shadow-lg ${borderClass} border mb-6`}>
+          <h2 className={`text-xl font-semibold mb-4 ${textClass}`}>Appearance</h2>
+          <div className={`flex items-center justify-between p-4 rounded-lg border ${borderClass}`}>
+            <div className="flex items-center gap-4">
+              {theme === 'dark' ? (
+                <MoonIcon className={subTextClass} size={20} />
+              ) : (
+                <SunIcon className={subTextClass} size={20} />
+              )}
+              <div>
+                <p className={`font-medium ${textClass}`}>Theme</p>
+                <p className={subTextClass}>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</p>
               </div>
-              <button
-                onClick={handleThemeToggle}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-              >
-                Toggle Theme
-              </button>
             </div>
-          </div>
-        </div>
-
-        <div className={`${cardClass} rounded-xl p-8 shadow-lg transition-colors duration-200`}>
-          <h2 className={`text-2xl font-semibold mb-6 ${headingClass}`}>Account Actions</h2>
-          <div className="space-y-4">
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors w-full sm:w-auto justify-center text-lg font-medium"
+              onClick={handleThemeToggle}
+              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
-              <LogOutIcon size={24} />
-              Logout
+              Toggle Theme
             </button>
           </div>
+        </div>
+
+        {/* Account Actions */}
+        <div className={`${cardClass} rounded-lg p-6 shadow-lg ${borderClass} border`}>
+          <h2 className={`text-xl font-semibold mb-4 ${textClass}`}>Account Actions</h2>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors w-full sm:w-auto justify-center text-lg font-medium"
+          >
+            <LogOutIcon size={20} />
+            Logout
+          </button>
         </div>
       </div>
     </div>

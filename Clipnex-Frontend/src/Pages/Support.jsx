@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import {
   Mail,
-  Phone,
-  MessageSquare,
   HelpCircle,
   ChevronDown,
   ChevronUp,
@@ -12,14 +10,6 @@ import {
 function Support() {
   const { theme } = useSelector((state) => state.auth);
   const [openFaq, setOpenFaq] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
-  const [formError, setFormError] = useState(null);
-  const [formSuccess, setFormSuccess] = useState(false);
 
   const containerClass = theme === "dark" ? "bg-darkbg" : "bg-white";
   const textClass = theme === "dark" ? "text-white" : "text-gray-900";
@@ -59,51 +49,6 @@ function Support() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError(null);
-    setFormSuccess(false);
-
-    // Basic validation
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.subject ||
-      !formData.message
-    ) {
-      setFormError("Please fill in all fields");
-      return;
-    }
-
-    if (!formData.email.includes("@")) {
-      setFormError("Please enter a valid email address");
-      return;
-    }
-
-    try {
-      // Here you would typically send the form data to your backend
-      // For now, we'll just simulate a successful submission
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setFormSuccess(true);
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-      });
-    } catch (error) {
-      setFormError("Failed to send message. Please try again later.");
-    }
-  };
-
   return (
     <div className={`min-h-screen ${containerClass} py-8 px-4 md:px-8`}>
       <div className="max-w-4xl mx-auto">
@@ -125,108 +70,13 @@ function Support() {
           <h2 className={`text-xl font-semibold mb-4 ${textClass}`}>
             Contact Us
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <Mail className={subTextClass} size={24} />
-              <div>
-                <p className={`font-medium ${textClass}`}>Email</p>
-                <p className={subTextClass}>support@clipnex.com</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Phone className={subTextClass} size={24} />
-              <div>
-                <p className={`font-medium ${textClass}`}>Phone</p>
-                <p className={subTextClass}>+1 (555) 123-4567</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <MessageSquare className={subTextClass} size={24} />
-              <div>
-                <p className={`font-medium ${textClass}`}>Live Chat</p>
-                <p className={subTextClass}>Available 24/7</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <Mail className={subTextClass} size={24} />
+            <div>
+              <p className={`font-medium ${textClass}`}>Email</p>
+              <p className={subTextClass}>support@clipnex.com</p>
             </div>
           </div>
-        </div>
-
-        {/* Support Form */}
-        <div
-          className={`${cardClass} rounded-lg p-6 mb-8 shadow-lg ${borderClass} border`}
-        >
-          <h2 className={`text-xl font-semibold mb-4 ${textClass}`}>
-            Send us a Message
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className={`block mb-1 ${textClass}`}>
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className={`w-full p-2 rounded-lg border ${borderClass} ${cardClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                placeholder="Your name"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className={`block mb-1 ${textClass}`}>
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`w-full p-2 rounded-lg border ${borderClass} ${cardClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                placeholder="your@email.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="subject" className={`block mb-1 ${textClass}`}>
-                Subject
-              </label>
-              <input
-                type="text"
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                className={`w-full p-2 rounded-lg border ${borderClass} ${cardClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                placeholder="How can we help?"
-              />
-            </div>
-            <div>
-              <label htmlFor="message" className={`block mb-1 ${textClass}`}>
-                Message
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                rows="4"
-                className={`w-full p-2 rounded-lg border ${borderClass} ${cardClass} ${textClass} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                placeholder="Tell us about your issue..."
-              />
-            </div>
-            {formError && <p className="text-red-500 text-sm">{formError}</p>}
-            {formSuccess && (
-              <p className="text-green-500 text-sm">
-                Message sent successfully!
-              </p>
-            )}
-            <button
-              type="submit"
-              className="w-full py-2 px-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-            >
-              Send Message
-            </button>
-          </form>
         </div>
 
         {/* FAQs */}

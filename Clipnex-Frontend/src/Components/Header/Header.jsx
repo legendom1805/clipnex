@@ -1,18 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import Logo2 from "../Logo2.jsx";
 import { useNavigate } from "react-router-dom";
-import { CircleUserIcon, SearchIcon, Upload } from "lucide-react";
+import { CircleUserIcon, SearchIcon, Upload, User } from "lucide-react";
 import { checkAuthStatus } from "../../Store/authSlice";
 
 function Header() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, loading, theme } = useSelector((state) => state.auth);
+  const [searchQuery, setSearchQuery] = useState('');
+  // Get the actual user data from the nested structure
+  const userData = user?.data;
 
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   const headerClass = theme === 'dark'
     ? 'bg-darkbg/90 border-white/50'
@@ -44,16 +54,18 @@ function Header() {
           <Logo2 />
           <h4 className={`ml-2 text-lg ${textClass}`}>Clipnex</h4>
         </div>
-        <div className={`searchbar w-[40vw] flex items-center border rounded-lg mx-auto ${searchBarClass}`}>
+        <form onSubmit={handleSearch} className={`searchbar w-[40vw] flex items-center border rounded-lg mx-auto ${searchBarClass}`}>
           <div className={`flex items-center px-3 py-2`}>
             <SearchIcon className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} size={20} />
           </div>
           <input
             type="text"
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full bg-transparent outline-none ${searchTextClass}`}
           />
-        </div>
+        </form>
         <div className="flex items-center ml-4 mr-4">
           <button 
             className={`flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-sm transition-colors ${buttonClass}`}
@@ -77,16 +89,30 @@ function Header() {
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <span className={textClass}>{user.username}</span>
+                  <span className={textClass}>{userData?.username}</span>
                 </div>
               )}
             </>
           )}
-          <CircleUserIcon 
-            className={`cursor-pointer ml-4 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}
-            size={32} 
+          <div 
+            className="cursor-pointer ml-4 w-8 h-8 rounded-full overflow-hidden"
             onClick={() => user && navigate('/settings')}
-          />
+          >
+            {userData?.avatar ? (
+              <img 
+                src={userData.avatar} 
+                alt={userData.username}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = ''; // Clear the src to show fallback
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <User className={theme === 'dark' ? 'text-white' : 'text-gray-700'} size={20} />
+              </div>
+            )}
+          </div>
         </div>
       </nav>
     </header>

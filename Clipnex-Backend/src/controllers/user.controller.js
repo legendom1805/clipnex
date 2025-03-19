@@ -362,6 +362,53 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "videos",
+        localField: "_id",
+        foreignField: "owner",
+        as: "videos",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+          {
+            $project: {
+              videoFile: 1,
+              thumbnail: 1,
+              title: 1,
+              description: 1,
+              duration: 1,
+              views: 1,
+              likes: 1,
+              owner: 1,
+              createdAt: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
       $addFields: {
         subscriberCount: {
           $size: "$AllsubscribersDocuments",
@@ -388,6 +435,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         avatar: 1,
         coverImage: 1,
         email: 1,
+        videos: 1, // Include videos in the projection
       },
     },
   ]);

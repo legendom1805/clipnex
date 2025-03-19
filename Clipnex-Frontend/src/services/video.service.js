@@ -59,10 +59,10 @@ export const uploadVideo = async (formData, accessToken) => {
 };
 
 // Get user details
-export const getUserDetails = async (userId) => {
+export const getUserDetails = async (username) => {
   try {
-    // Get the channel profile directly using userId as username
-    const response = await api.get(`/users/channel/${userId}`, {
+    // Get the channel profile using username
+    const response = await api.get(`/users/c/${username}`, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -96,11 +96,11 @@ export const getUserDetails = async (userId) => {
     return {
       statusCode: 200,
       data: {
-        _id: userId,
+        _id: username,
         username: "Unknown User",
         fullname: "Unknown User",
-        avatar: null,
-        coverImage: null,
+        avatar: "",
+        coverImage: "",
         subscriberCount: 0,
         isSubscribed: false,
       },
@@ -129,9 +129,32 @@ export const updateVideoViews = async (videoId) => {
 // Get channel videos
 export const getChannelVideos = async (username) => {
   try {
-    const response = await api.get(`/videos/c/${username}`);
+    const response = await api.get(`/users/channel/${username}`);
     console.log("Channel videos response:", response.data);
-    return response.data;
+
+    if (!response.data || !response.data.data) {
+      throw new Error("No videos found for this channel");
+    }
+
+    // Process video data to ensure consistent format
+    const videos = response.data.data.videos || [];
+    const processedVideos = videos.map(video => ({
+      ...video,
+      duration: video.duration ? Number(video.duration) : 0,
+      views: video.views || 0,
+      likes: video.likes || 0,
+      createdBy: {
+        _id: video.owner?._id || video.owner,
+        username: video.owner?.username || username,
+        fullname: video.owner?.fullname || username,
+        avatar: video.owner?.avatar || "",
+      }
+    }));
+
+    return {
+      statusCode: response.data.statusCode,
+      data: processedVideos
+    };
   } catch (error) {
     console.error("Error fetching channel videos:", error);
     throw error;

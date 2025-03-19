@@ -35,7 +35,7 @@ const router = createBrowserRouter([
         element: <VideoPlayer />,
       },
       {
-        path: "/channel/:channelId",
+        path: "/c/:username",
         element: <Channel />,
       },
       {

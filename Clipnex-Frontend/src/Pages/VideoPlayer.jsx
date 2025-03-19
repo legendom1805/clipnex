@@ -356,7 +356,7 @@ function VideoPlayer() {
                   console.log('Clicked avatar, creator data:', video.createdBy);
                   if (video.createdBy?.username) {
                     console.log('Navigating to channel:', video.createdBy.username);
-                    navigate(`/channel/${video.createdBy.username}`);
+                    navigate(`/c/${video.createdBy.username}`);
                   } else {
                     console.log('No creator username available');
                   }
@@ -384,7 +384,7 @@ function VideoPlayer() {
                     console.log('Clicked username, creator data:', video.createdBy);
                     if (video.createdBy?.username) {
                       console.log('Navigating to channel:', video.createdBy.username);
-                      navigate(`/channel/${video.createdBy.username}`);
+                      navigate(`/c/${video.createdBy.username}`);
                     } else {
                       console.log('No creator username available');
                     }
@@ -404,7 +404,7 @@ function VideoPlayer() {
                       console.log('Clicked username, creator data:', video.createdBy);
                       if (video.createdBy?.username) {
                         console.log('Navigating to channel:', video.createdBy.username);
-                        navigate(`/channel/${video.createdBy.username}`);
+                        navigate(`/c/${video.createdBy.username}`);
                       } else {
                         console.log('No creator username available');
                       }

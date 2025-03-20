@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { getChannelStats, getOurChannelVideos, deleteVideo } from '../services/video.service';
-import { Eye, ThumbsUp, Users, Video, Calendar, Trash2, X } from 'lucide-react';
+import { getOurChannelVideos, deleteVideo } from '../services/video.service';
+import { Video, Calendar, Trash2, X } from 'lucide-react';
 import VideoCard from '../Components/VideoCard';
 import { toast } from 'react-hot-toast';
 
 function YourVideos() {
   const navigate = useNavigate();
   const { theme, user } = useSelector(state => state.auth);
-  const [stats, setStats] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,14 +22,9 @@ function YourVideos() {
   const borderClass = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchVideos = async () => {
       try {
         setLoading(true);
-        // Fetch channel stats
-        const statsResponse = await getChannelStats();
-        console.log('Stats response:', statsResponse);
-        setStats(statsResponse.data);
-
         // Fetch channel videos
         const videosResponse = await getOurChannelVideos();
         console.log('Videos response:', videosResponse);
@@ -47,18 +41,17 @@ function YourVideos() {
           }
         }));
         setVideos(processedVideos);
-
         setError(null);
       } catch (err) {
-        console.error('Error fetching channel data:', err);
-        setError(err.message || 'Failed to load channel data');
+        console.error('Error fetching videos:', err);
+        setError(err.message || 'Failed to load videos');
       } finally {
         setLoading(false);
       }
     };
 
     if (user?.data) {
-      fetchData();
+      fetchVideos();
     }
   }, [user]);
 
@@ -69,7 +62,6 @@ function YourVideos() {
       setVideos(prev => prev.filter(v => v._id !== videoId));
       setShowDeleteConfirm(null);
       
-      // Enhanced success toast
       toast.success('Video deleted successfully', {
         duration: 4000,
         position: 'top-center',
@@ -90,7 +82,6 @@ function YourVideos() {
     } catch (err) {
       console.error('Error deleting video:', err);
       
-      // Enhanced error toast
       toast.error(err.message || 'Failed to delete video', {
         duration: 5000,
         position: 'top-center',
@@ -125,7 +116,7 @@ function YourVideos() {
     return (
       <div className="min-h-screen flex items-center justify-center pr-[15%]">
         <div className="text-center">
-          <p className={`text-xl font-semibold mb-2 ${textClass}`}>Error loading channel data</p>
+          <p className={`text-xl font-semibold mb-2 ${textClass}`}>Error loading videos</p>
           <p className={subTextClass}>{error}</p>
         </div>
       </div>
@@ -135,44 +126,10 @@ function YourVideos() {
   return (
     <div className={`min-h-screen ${containerClass} pr-[15%]`}>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Channel Stats */}
-        <div className="mb-8">
-          <h1 className={`text-2xl font-bold ${textClass} mb-6`}>Channel Overview</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className={`${cardClass} rounded-lg p-6 border ${borderClass} hover:border-purple-500 transition-colors`}>
-              <div className="flex items-center gap-3 mb-2">
-                <Users className={subTextClass} size={24} />
-                <h3 className={`text-lg font-semibold ${textClass}`}>Subscribers</h3>
-              </div>
-              <p className={`text-3xl font-bold ${textClass}`}>{stats?.subscribers || 0}</p>
-            </div>
-
-            <div className={`${cardClass} rounded-lg p-6 border ${borderClass} hover:border-purple-500 transition-colors`}>
-              <div className="flex items-center gap-3 mb-2">
-                <ThumbsUp className={subTextClass} size={24} />
-                <h3 className={`text-lg font-semibold ${textClass}`}>Total Likes</h3>
-              </div>
-              <p className={`text-3xl font-bold ${textClass}`}>{stats?.likes || 0}</p>
-            </div>
-
-            <div className={`${cardClass} rounded-lg p-6 border ${borderClass} hover:border-purple-500 transition-colors`}>
-              <div className="flex items-center gap-3 mb-2">
-                <Eye className={subTextClass} size={24} />
-                <h3 className={`text-lg font-semibold ${textClass}`}>Total Views</h3>
-              </div>
-              <p className={`text-3xl font-bold ${textClass}`}>{stats?.views || 0}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Videos Section */}
-    <div>
+        <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className={`text-2xl font-bold ${textClass}`}>Your Videos</h2>
-            <div className="flex items-center gap-2">
-              <Calendar className={subTextClass} size={20} />
-              <span className={subTextClass}>Latest</span>
-            </div>
           </div>
 
           {videos.length === 0 ? (

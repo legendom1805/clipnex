@@ -6,16 +6,34 @@ export const getAllVideos = async () => {
     const response = await api.get("/videos/");
     console.log("Raw video data:", response.data?.data);
 
-    // Ensure durations are properly handled numbers
-    if (response.data?.data) {
-      response.data.data = response.data.data.map((video) => ({
-        ...video,
-        duration: video.duration ? Number(video.duration) : 0,
-      }));
+    // Ensure we have video data and it's an array
+    if (!response.data?.data || !Array.isArray(response.data.data)) {
+      console.log("No videos found or invalid data format");
+      return { data: [] };
     }
 
-    console.log("Found", response.data?.data?.length, "videos");
-    return response.data;
+    // Filter out non-video items and ensure proper video data structure
+    const videos = response.data.data
+      .filter(item => item.videoFile) // Only include items that have a video file
+      .map((video) => ({
+        ...video,
+        duration: video.duration ? Number(video.duration) : 0,
+        views: video.views || 0,
+        likes: video.likes || 0,
+        createdBy: {
+          _id: video.createdBy?._id || video.owner?._id || video.owner,
+          username: video.createdBy?.username || video.owner?.username || "",
+          fullname: video.createdBy?.fullname || video.owner?.fullname || video.owner?.username || "",
+          avatar: video.createdBy?.avatar || video.owner?.avatar || "",
+        }
+      }));
+
+    console.log("Found", videos.length, "valid videos");
+    console.log("Processed videos with creator info:", videos.map(v => ({ 
+      title: v.title, 
+      creator: v.createdBy 
+    })));
+    return { data: videos };
   } catch (error) {
     console.error("Error fetching videos:", error);
     throw error;
@@ -133,9 +151,43 @@ export const updateVideoViews = async (videoId) => {
 // Get channel videos
 export const getChannelVideos = async (username) => {
   try {
+    console.log('Fetching channel videos for username:', username);
     const response = await api.get(`/users/channel/${username}`);
-    console.log("Channel videos response:", response.data);
-    return response.data;
+    console.log("Raw API response:", response);
+
+    // Check if we have videos in the response
+    if (!response.data?.data?.videos || !Array.isArray(response.data.data.videos)) {
+      console.log("No channel videos found or invalid data format");
+      return { data: [] };
+    }
+
+    // Process videos to ensure proper data structure
+    const videos = response.data.data.videos
+      .filter(item => {
+        const hasVideoFile = Boolean(item.videoFile);
+        if (!hasVideoFile) {
+          console.log('Filtering out item without videoFile:', item);
+        }
+        return hasVideoFile;
+      })
+      .map((video) => {
+        console.log('Processing video:', video);
+        return {
+          ...video,
+          duration: video.duration ? Number(video.duration) : 0,
+          views: video.views || 0,
+          likes: video.likes || 0,
+          createdBy: {
+            _id: video.owner?._id || video.createdBy?._id,
+            username: video.owner?.username || video.createdBy?.username || "",
+            fullname: video.owner?.fullname || video.createdBy?.fullname || "",
+            avatar: video.owner?.avatar || video.createdBy?.avatar || "",
+          }
+        };
+      });
+
+    console.log("Processed channel videos:", videos);
+    return { data: videos };
   } catch (error) {
     console.error("Error fetching channel videos:", error);
     throw error;

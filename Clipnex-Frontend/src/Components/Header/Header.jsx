@@ -89,14 +89,19 @@ function Header() {
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <span className={textClass}>{userData?.username}</span>
+                  <span 
+                    className={`${textClass} cursor-pointer hover:opacity-80`}
+                    onClick={() => user && navigate('/youraccount')}
+                  >
+                    {userData?.username}
+                  </span>
                 </div>
               )}
             </>
           )}
           <div 
-            className="cursor-pointer ml-4 w-8 h-8 rounded-full overflow-hidden"
-            onClick={() => user && navigate('/settings')}
+            className="cursor-pointer ml-4 w-8 h-8 rounded-full overflow-hidden hover:opacity-80"
+            onClick={() => user && navigate('/youraccount')}
           >
             {userData?.avatar ? (
               <img 

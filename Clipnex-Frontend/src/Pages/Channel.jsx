@@ -35,11 +35,13 @@ function Channel() {
 
         // Fetch channel videos
         const videosResponse = await getChannelVideos(username);
-        console.log('Channel videos:', videosResponse);
+        console.log('Channel videos response:', videosResponse);
         
-        if (videosResponse && videosResponse.data) {
+        if (videosResponse?.data) {
+          console.log('Setting videos:', videosResponse.data);
           setVideos(videosResponse.data);
         } else {
+          console.log('No videos found, setting empty array');
           setVideos([]);
         }
 

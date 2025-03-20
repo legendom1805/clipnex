@@ -34,9 +34,8 @@ function Sidenav() {
   const getButtonClass = (path, isTopSection = true) => {
     const baseClass = `${textClass} flex rounded-lg ${isTopSection ? 'border' : 'border-transparent'} px-5 ${isTopSection ? 'py-2' : 'pb-2'} items-center`;
     const activeClass = isTopSection ? `
-      relative
-      before:absolute before:inset-0 before:rounded-lg before:p-[1px] before:bg-gradient-to-r before:from-[#F200FF] before:to-[#00F6FF] before:-z-10
-      after:absolute after:inset-[1px] after:rounded-[7px] after:bg-transparent after:-z-10
+      border-transparent relative
+      shadow-[5px_0_15px_-3px_#F200FF,0_0_15px_0_#00F6FF]
       transition-all duration-300
     ` : '';
     

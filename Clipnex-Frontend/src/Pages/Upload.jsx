@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload as UploadIcon, FileVideo, Image, Type, Send } from 'lucide-react';
+import { Upload as UploadIcon, FileVideo, Image, Type, Send, Wand2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { uploadVideo } from '../services/video.service';
+import { generateVideoDescription } from '../services/ai.service';
 import { toast } from 'react-hot-toast';
 import { formatDuration } from '../utils/formatDuration';
 
@@ -18,6 +19,7 @@ function Upload() {
   const [thumbnailPreview, setThumbnailPreview] = useState('');
   const [videoPreview, setVideoPreview] = useState('');
   const [videoDuration, setVideoDuration] = useState('');
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   const containerClass = theme === "dark" ? "bg-darkbg" : "bg-white";
   const textClass = theme === "dark" ? "text-white" : "text-gray-900";
@@ -64,6 +66,25 @@ function Upload() {
     if (file) {
       setThumbnail(file);
       setThumbnailPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!title.trim()) {
+      toast.error('Please enter a title first');
+      return;
+    }
+
+    try {
+      setGeneratingDescription(true);
+      const response = await generateVideoDescription(title);
+      setDescription(response.data.description);
+      toast.success('Description generated successfully!');
+    } catch (err) {
+      console.error('Error generating description:', err);
+      toast.error(err.message || 'Failed to generate description');
+    } finally {
+      setGeneratingDescription(false);
     }
   };
 
@@ -230,7 +251,31 @@ function Upload() {
                 />
               </div>
               <div>
-                <label className={`block mb-2 ${textClass}`}>Description</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={textClass}>Description</label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateDescription}
+                    disabled={generatingDescription || !title.trim()}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm ${
+                      generatingDescription || !title.trim()
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-purple-500 hover:bg-purple-600'
+                    } text-white transition-colors`}
+                  >
+                    {generatingDescription ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={16} />
+                        Generate with AI
+                      </>
+                    )}
+                  </button>
+                </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

@@ -41,12 +41,16 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new apiError(400, "All fields are required !!");
   }
 
-  const existedUser = await User.findOne({
-    $or: [{ username }, { email }],
-  });
+  // Check for existing email
+  const existingEmail = await User.findOne({ email });
+  if (existingEmail) {
+    throw new apiError(409, `Email ${email} is already registered. Please use a different email or try logging in.`);
+  }
 
-  if (existedUser) {
-    throw new apiError(409, "User already exists..!");
+  // Check for existing username
+  const existingUsername = await User.findOne({ username });
+  if (existingUsername) {
+    throw new apiError(409, `Username "${username}" is already taken. Please choose a different username.`);
   }
 
   let coverImageLocalPath;

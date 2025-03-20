@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PlayCircle, User } from 'lucide-react';
 import { updateVideoViews } from '../services/video.service';
+import { formatDuration, formatRelativeTime } from '../utils/formatDuration';
 
 function VideoCard({ video, theme, onVideoClick }) {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ function VideoCard({ video, theme, onVideoClick }) {
           className="w-full h-full object-cover"
         />
         <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-          {formatVideoDuration(video.duration)}
+          {formatDuration(video.duration)}
         </div>
       </div>
       
@@ -100,7 +101,7 @@ function VideoCard({ video, theme, onVideoClick }) {
                 <>
                   <span className={subTextClass}>•</span>
                   <span className={subTextClass}>
-                    {new Date(video.createdAt).toLocaleDateString()}
+                    {formatRelativeTime(video.createdAt)}
                   </span>
                 </>
               )}

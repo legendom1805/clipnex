@@ -50,8 +50,8 @@ function Support() {
   };
 
   return (
-    <div className={`min-h-screen ${containerClass} py-8 px-4 md:px-8`}>
-      <div className="max-w-4xl mx-auto">
+    <div className={`min-h-screen ${containerClass} pr-[15%]`}>
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className={`text-3xl font-bold mb-4 ${textClass}`}>

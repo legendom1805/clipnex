@@ -9,11 +9,17 @@ const api = axios.create({
 // Add request interceptor to add token
 api.interceptors.request.use(
   (config) => {
+    // Don't log token messages for auth routes
+    const isAuthRoute = config.url?.includes('/login') || config.url?.includes('/register');
+    
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Adding token to request:', config.url, 'Token:', token.substring(0, 10) + '...');
-    } else {
+      if (!isAuthRoute) {
+        console.log('Adding token to request:', config.url);
+      }
+    } else if (!isAuthRoute) {
+      // Only log missing token for non-auth routes
       console.log('No token found for request:', config.url);
     }
     return config;
@@ -52,9 +58,23 @@ api.interceptors.response.use(
 // Register a new user
 export const registerUser = async (userData) => {
   try {
-    const response = await api.post("/users/register", userData);
+    // If userData is FormData, ensure proper headers
+    const config = userData instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    } : {};
+
+    const response = await api.post("/users/register", userData, config);
+    
+    // If registration is successful and we receive a token, set it
+    if (response.data?.data?.accessToken) {
+      setAuthToken(response.data.data.accessToken);
+    }
+    
     return response.data;
   } catch (error) {
+    console.error('Registration error:', error.response || error);
     throw error;
   }
 };
@@ -84,7 +104,7 @@ export const loginUser = async (credentials) => {
     
     if (!accessToken) {
       console.error('Access token not found in response:', response.data);
-      throw new Error('No token received from server');
+      throw new Error('');
     }
 
     console.log('Login successful, setting access token');
@@ -93,7 +113,7 @@ export const loginUser = async (credentials) => {
     // Return the entire response data
     return {
       accessToken,
-      data: response.data.data.user
+      data: response.data.data
     };
   } catch (error) {
     console.error('Login error:', error.response || error);
@@ -129,23 +149,20 @@ export const refreshAccessToken = async () => {
 // Get current user
 export const getCurrentUser = async () => {
   try {
-    console.log('Fetching current user...');
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      console.log('No token found in getCurrentUser');
-      throw new Error('No authentication token found');
+      // Return null instead of throwing error
+      return null;
     }
 
     // Use the helper function to ensure token is set
     setAuthToken(token);
     
     const response = await api.get("/users/current-user");
-    console.log('Current user fetch successful:', response.data);
 
     // Ensure we have valid user data
     if (!response.data?.data) {
-      console.error('Invalid user data structure:', response.data);
-      throw new Error('Invalid user data received');
+      return null;
     }
 
     return {
@@ -154,10 +171,9 @@ export const getCurrentUser = async () => {
   } catch (error) {
     console.error('getCurrentUser error:', error);
     if (error.response?.status === 401) {
-      console.log('Unauthorized access in getCurrentUser, cleaning up token');
       setAuthToken(null);
     }
-    throw error;
+    return null;
   }
 };
 
@@ -200,6 +216,27 @@ export const resetPassword = async (token, newPassword) => {
     });
     return response.data;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const checkAuthStatus = async () => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('');
+    }
+
+    // Ensure token is set in headers
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    const response = await api.get('/users/me');
+    return response.data;
+  } catch (error) {
+    console.error('Auth status check error:', error);
+    // Clear token and headers on error
+    localStorage.removeItem('accessToken');
+    delete api.defaults.headers.common['Authorization'];
     throw error;
   }
 };

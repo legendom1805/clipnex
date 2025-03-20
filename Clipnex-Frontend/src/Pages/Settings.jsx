@@ -52,8 +52,8 @@ function Settings() {
   const borderClass = theme === "dark" ? "border-wite-200" : "border-black-200";
 
   return (
-    <div className={`min-h-screen ${containerClass} py-8 px-4 md:px-8`}>
-      <div className="max-w-3xl mx-auto">
+    <div className={`min-h-screen ${containerClass} pr-[15%]`}>
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className={`text-2xl font-bold mb-8 ${textClass}`}>Settings</h1>
 
         {/* Account Information */}

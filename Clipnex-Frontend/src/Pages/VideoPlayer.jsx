@@ -7,7 +7,7 @@ import { toggleVideoLike, toggleCommentLike, getLikedVideos } from '../services/
 import { toggleSubscription, getChannelSubscribers } from '../services/subscription.service';
 import { getUserPlaylists, addVideoToPlaylist } from '../services/playlist.service';
 import { User, ThumbsUp, Eye, Calendar, Clock, Send, Trash2, X, Heart, Bell, Users, ListPlus, Plus, Check } from 'lucide-react';
-import { formatDuration } from '../utils/formatDuration';
+import { formatDuration, formatRelativeTime } from '../utils/formatDuration';
 
 function VideoPlayer() {
   const { videoId } = useParams();
@@ -242,48 +242,6 @@ function VideoPlayer() {
 
   const handleDeleteCancel = () => {
     setDeleteConfirmation(null);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      console.log('No date string provided');
-      return 'Just now';
-    }
-    try {
-      console.log('Formatting date:', dateString); // Log the date string we're trying to format
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        console.error('Invalid date string received:', dateString);
-        return 'Just now';
-      }
-      
-      const now = new Date();
-      const diffInSeconds = Math.floor((now - date) / 1000);
-      
-      if (diffInSeconds < 60) {
-        return 'Just now';
-      } else if (diffInSeconds < 3600) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
-      } else if (diffInSeconds < 86400) {
-        const hours = Math.floor(diffInSeconds / 3600);
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
-      } else if (diffInSeconds < 604800) {
-        const days = Math.floor(diffInSeconds / 86400);
-        return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-      } else {
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
-    } catch (err) {
-      console.error('Error formatting date:', err);
-      return 'Just now';
-    }
   };
 
   const handleVideoLike = async () => {
@@ -561,7 +519,7 @@ function VideoPlayer() {
               )}
               <div className="flex items-center gap-2">
                 <Calendar className={subTextClass} size={20} />
-                <span className={subTextClass}>{formatDate(video.createdAt)}</span>
+                <span className={subTextClass}>{formatRelativeTime(video.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -663,7 +621,7 @@ function VideoPlayer() {
                             {comment.owner?.fullname || comment.owner?.username || 'Anonymous'}
                           </p>
                           <span className={`text-sm ${subTextClass}`}>
-                            • {formatDate(comment.createdAt)}
+                            • {formatRelativeTime(comment.createdAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-4">
@@ -698,7 +656,7 @@ function VideoPlayer() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className={`${cardClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className={`text-lg font-semibold ${textClass}`}>Delete Comment</h3>
@@ -732,7 +690,7 @@ function VideoPlayer() {
 
       {/* Add the Playlist Modal */}
       {showPlaylistModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className={`${cardClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className={`text-lg font-semibold ${textClass}`}>Save to...</h3>

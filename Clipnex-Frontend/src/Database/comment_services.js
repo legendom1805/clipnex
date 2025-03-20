@@ -13,6 +13,9 @@ export const getVideoComments = async (videoId) => {
       "Error fetching comments:",
       error.response?.data || error.message
     );
+    if (error.response?.data?.includes('No comments')) {
+      return [];
+    }
     throw error;
   }
 };

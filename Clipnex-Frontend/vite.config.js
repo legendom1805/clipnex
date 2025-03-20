@@ -5,10 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": {
-        target: "http://localhost:8000/api/v1", // Backend URL
+      "/api/v1": {
+        target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '')
       },
     },
   },

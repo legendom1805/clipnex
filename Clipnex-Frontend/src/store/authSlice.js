@@ -13,21 +13,27 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
+      // First get the login response which contains the token and user data
       const loginResponse = await authService.loginUser(credentials);
-      if (loginResponse) {
-        const userData = await authService.getCurrentUser();
-        console.log("User data after login:", userData);
-        return { 
-          success: true, 
-          user: userData  // The data structure is already correct from getCurrentUser
-        };
+      console.log('Login response in thunk:', loginResponse);
+      
+      if (!loginResponse?.accessToken) {
+        console.error('No token in login response:', loginResponse);
+        return rejectWithValue({ success: false, error: 'No token received from login' });
       }
-      return rejectWithValue({ success: false, error: 'Login failed' });
+
+      // Return the user data with the correct structure
+      return { 
+        success: true, 
+        user: {
+          data: loginResponse.data.user // Wrap the user data in a data property
+        }
+      };
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error:", error.response?.data || error);
       return rejectWithValue({ 
         success: false, 
-        error: error.message || 'Login failed' 
+        error: error.response?.data?.message || error.message || 'Login failed' 
       });
     }
   }
@@ -55,16 +61,38 @@ export const checkAuthStatus = createAsyncThunk(
   'auth/checkStatus',
   async (_, { rejectWithValue }) => {
     try {
-      const userData = await authService.getCurrentUser();
-      console.log("Current user data in checkAuthStatus:", userData);
-      return { user: userData }; // The data structure is already correct from getCurrentUser
-    } catch (error) {
-      console.error("Check auth status error:", error);
-      // If it's a 401 error, just return null user without treating it as an error
-      if (error.response?.status === 401) {
-        return { user: null };
+      const token = localStorage.getItem('accessToken');
+      console.log('Checking auth status, token:', token ? 'exists' : 'not found');
+      
+      if (!token) {
+        console.log('No token found in localStorage');
+        return rejectWithValue('No token found');
       }
-      return rejectWithValue({ error: error.message });
+
+      // Set the token in axios defaults
+      authService.setAuthToken(token);
+      
+      // Get current user data
+      const userData = await authService.getCurrentUser();
+      console.log('Current user data:', userData);
+
+      if (!userData?.data) {
+        console.error('Invalid user data received:', userData);
+        authService.setAuthToken(null); // Clear invalid token
+        return rejectWithValue('Invalid user data');
+      }
+
+      return {
+        data: userData.data
+      };
+    } catch (error) {
+      console.error('Auth check error:', error);
+      // Only remove token if it's an authentication error (401)
+      if (error.response?.status === 401) {
+        console.log('Unauthorized, removing token');
+        authService.setAuthToken(null);
+      }
+      return rejectWithValue(error.response?.data?.message || 'Failed to check auth status');
     }
   }
 );
@@ -83,48 +111,55 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log('Login: pending');
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.error = null;
-        console.log("Updated user state:", state.user);
+        console.log('Login: fulfilled, user:', action.payload.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.error || 'Login failed';
+        console.log('Login: rejected, error:', state.error);
       })
     
     // Logout
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log('Logout: pending');
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
         state.user = null;
         state.error = null;
+        console.log('Logout: fulfilled');
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.error || 'Logout failed';
+        console.log('Logout: rejected, error:', state.error);
       })
     
     // Check auth status
       .addCase(checkAuthStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log('Auth check: pending');
       })
       .addCase(checkAuthStatus.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = action.payload;
         state.error = null;
-        console.log("Updated user state from check:", state.user);
+        console.log('Auth check: fulfilled, user:', action.payload);
       })
       .addCase(checkAuthStatus.rejected, (state, action) => {
         state.loading = false;
         state.user = null;
-        state.error = action.payload?.error;
+        state.error = action.payload;
+        console.log('Auth check: rejected, error:', action.payload);
       });
   }
 });

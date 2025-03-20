@@ -4,7 +4,9 @@ import { useSelector } from 'react-redux';
 import { getVideoDetails, getUserDetails, updateVideoViews } from '../services/video.service';
 import { getVideoComments, addVideoComment, deleteComment } from '../Database/comment_services';
 import { toggleVideoLike, toggleCommentLike, getLikedVideos } from '../services/like.service';
-import { User, ThumbsUp, Eye, Calendar, Clock, Send, Trash2, X, Heart } from 'lucide-react';
+import { toggleSubscription, getChannelSubscribers } from '../services/subscription.service';
+import { getUserPlaylists, addVideoToPlaylist } from '../services/playlist.service';
+import { User, ThumbsUp, Eye, Calendar, Clock, Send, Trash2, X, Heart, Bell, Users, ListPlus, Plus, Check } from 'lucide-react';
 import { formatDuration } from '../utils/formatDuration';
 
 function VideoPlayer() {
@@ -25,6 +27,12 @@ function VideoPlayer() {
   const [isVideoLiked, setIsVideoLiked] = useState(false);
   const [likedComments, setLikedComments] = useState(new Set());
   const [commentLikes, setCommentLikes] = useState({});
+  const [subscribing, setSubscribing] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(false);
+  const [addingToPlaylist, setAddingToPlaylist] = useState(null);
+  const [playlistError, setPlaylistError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,7 +51,31 @@ function VideoPlayer() {
         const videoData = videoResponse.data;
         console.log('Processed video data:', videoData);
         console.log('Creator data:', videoData.createdBy);
+
+        // Set video data first
         setVideo(videoData);
+        
+        // If user is logged in, check subscription status
+        if (userData && videoData.createdBy?._id) {
+          const subscribersResponse = await getChannelSubscribers(videoData.createdBy._id);
+          console.log('Subscribers response:', subscribersResponse);
+          
+          if (subscribersResponse && subscribersResponse.data) {
+            const isUserSubscribed = subscribersResponse.data.subscribers?.some(
+              sub => sub._id === userData._id
+            ) || false;
+            
+            // Update video with subscription status
+            setVideo(prev => ({
+              ...prev,
+              createdBy: {
+                ...prev.createdBy,
+                isSubscribed: isUserSubscribed
+              }
+            }));
+          }
+        }
+
         // Set initial like state
         setIsVideoLiked(videoData.isLiked || false);
         setError(null);
@@ -59,7 +91,7 @@ function VideoPlayer() {
     if (videoId) {
       fetchVideoAndCreator();
     }
-  }, [videoId]);
+  }, [videoId, userData]);
 
   useEffect(() => {
     const fetchLikes = async () => {
@@ -86,12 +118,20 @@ function VideoPlayer() {
     const fetchComments = async () => {
       try {
         if (!userData) {
-          console.log('No user found, skipping comment fetch'); // Debug log
+          console.log('No user found, skipping comment fetch');
           return;
         }
-        console.log('Fetching comments for user:', userData._id); // Debug log
+        console.log('Fetching comments for user:', userData._id);
         const commentsData = await getVideoComments(videoId);
         console.log('Fetched comments:', commentsData);
+        
+        // If we get a 400 error with "No comments", treat it as an empty list
+        if (commentsData?.error === 'No comments') {
+          setComments([]);
+          setCommentLikes({});
+          setCommentError(null);
+          return;
+        }
         
         const commentsList = Array.isArray(commentsData) ? commentsData : 
                            Array.isArray(commentsData.data) ? commentsData.data : [];
@@ -108,8 +148,15 @@ function VideoPlayer() {
         setCommentError(null);
       } catch (err) {
         console.error('Error fetching comments:', err);
-        setComments([]);
-        setCommentError(null);
+        // If the error is "No comments", treat it as an empty list
+        if (err.response?.data?.includes('No comments')) {
+          setComments([]);
+          setCommentLikes({});
+          setCommentError(null);
+        } else {
+          setComments([]);
+          setCommentError('Failed to load comments');
+        }
       }
     };
 
@@ -117,6 +164,31 @@ function VideoPlayer() {
       fetchComments();
     }
   }, [videoId, userData]);
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      if (!userData?._id || !showPlaylistModal) {
+        console.log('Skipping playlist fetch - no user or modal not shown');
+        return;
+      }
+      
+      try {
+        setLoadingPlaylists(true);
+        console.log('Fetching playlists for user:', userData._id);
+        const response = await getUserPlaylists(userData._id);
+        console.log('Playlists response:', response);
+        setPlaylists(response.data);
+        setPlaylistError(null);
+      } catch (err) {
+        console.error('Error fetching playlists:', err);
+        setPlaylistError(err.message || 'Failed to load playlists');
+      } finally {
+        setLoadingPlaylists(false);
+      }
+    };
+
+    fetchPlaylists();
+  }, [userData, showPlaylistModal]);
 
   const handleAddComment = async () => {
     if (!comment.trim()) {
@@ -286,6 +358,71 @@ function VideoPlayer() {
     }
   };
 
+  const handleSubscribe = async () => {
+    if (!userData) {
+      navigate('/login');
+      return;
+    }
+
+    if (!video?.createdBy?._id) {
+      console.error('No channel ID found');
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      const response = await toggleSubscription(video.createdBy._id);
+      console.log('Subscription response:', response);
+      
+      // Update video state with new subscription status
+      setVideo(prev => ({
+        ...prev,
+        createdBy: {
+          ...prev.createdBy,
+          isSubscribed: !prev.createdBy.isSubscribed
+        }
+      }));
+
+    } catch (err) {
+      console.error('Error toggling subscription:', err);
+      setError('Failed to update subscription. Please try again.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const handleAddToPlaylist = async (playlistId) => {
+    if (!userData) {
+      console.log('No user data, redirecting to login');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAddingToPlaylist(playlistId);
+      console.log('Adding video to playlist:', { playlistId, videoId });
+      await addVideoToPlaylist(playlistId, videoId);
+      
+      // Update the playlists state to reflect the addition
+      setPlaylists(prev => prev.map(playlist => {
+        if (playlist._id === playlistId) {
+          return {
+            ...playlist,
+            videos: [...(playlist.videos || []), video._id]
+          };
+        }
+        return playlist;
+      }));
+      
+      setPlaylistError(null);
+    } catch (err) {
+      console.error('Error adding to playlist:', err);
+      setPlaylistError(err.message || 'Failed to add video to playlist');
+    } finally {
+      setAddingToPlaylist(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center pr-[15%]">
@@ -350,71 +487,54 @@ function VideoPlayer() {
           </h1>
 
           <div className="flex flex-wrap items-center gap-6 mb-6">
-            <div className="flex items-center gap-3">
-              <div 
-                onClick={() => {
-                  console.log('Clicked avatar, creator data:', video.createdBy);
-                  if (video.createdBy?.username) {
-                    console.log('Navigating to channel:', video.createdBy.username);
-                    navigate(`/c/${video.createdBy.username}`);
-                  } else {
-                    console.log('No creator username available');
-                  }
-                }}
-                className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-              >
-                {video.createdBy?.avatar ? (
-                  <img 
-                    src={video.createdBy.avatar}
-                    alt={video.createdBy.username || video.createdBy.fullname || 'Creator'}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('Error loading creator avatar:', e);
-                      e.target.src = ''; // Clear the src to show fallback
-                      e.target.onerror = null; // Prevent infinite loop
-                    }}
-                  />
-                ) : (
-                  <User className={subTextClass} size={24} />
-                )}
-              </div>
-              <div>
-                <p 
-                  onClick={() => {
-                    console.log('Clicked username, creator data:', video.createdBy);
-                    if (video.createdBy?.username) {
-                      console.log('Navigating to channel:', video.createdBy.username);
-                      navigate(`/c/${video.createdBy.username}`);
-                    } else {
-                      console.log('No creator username available');
-                    }
-                  }}
-                  className={`font-medium ${textClass} cursor-pointer hover:text-purple-500 transition-colors`}
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <div 
+                  className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer overflow-hidden"
+                  onClick={() => navigate(`/c/${video.createdBy.username}`)}
                 >
-                  {video.createdBy ? (
-                    video.createdBy.username || video.createdBy.fullname || 'Anonymous'
+                  {video.createdBy.avatar ? (
+                    <img
+                      src={video.createdBy.avatar}
+                      alt={video.createdBy.username}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <span className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded h-5 w-24 inline-block">
-                    </span>
+                    <User className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} size={24} />
                   )}
-                </p>
-                {video.createdBy?.username && (
-                  <p 
-                    onClick={() => {
-                      console.log('Clicked username, creator data:', video.createdBy);
-                      if (video.createdBy?.username) {
-                        console.log('Navigating to channel:', video.createdBy.username);
-                        navigate(`/c/${video.createdBy.username}`);
-                      } else {
-                        console.log('No creator username available');
-                      }
-                    }}
-                    className={`text-sm ${subTextClass} cursor-pointer hover:text-purple-500 transition-colors`}
-                  >
-                    @{video.createdBy.username}
-                  </p>
-                )}
+                </div>
               </div>
+              <div className="flex-grow">
+                <h3 
+                  className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} cursor-pointer hover:text-purple-500`}
+                  onClick={() => navigate(`/c/${video.createdBy.username}`)}
+                >
+                  {video.createdBy.fullname || video.createdBy.username}
+                </h3>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {video.createdBy.subscribersCount || 0} subscribers
+                </p>
+              </div>
+              {userData && userData._id !== video.createdBy._id && (
+                <button 
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                  className={`${
+                    video.createdBy.isSubscribed 
+                      ? 'bg-gray-600 hover:bg-gray-700' 
+                      : 'bg-purple-500 hover:bg-purple-600'
+                  } text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 disabled:opacity-50`}
+                >
+                  {subscribing ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <>
+                      {video.createdBy.isSubscribed ? <Bell size={20} /> : <Users size={20} />}
+                      {video.createdBy.isSubscribed ? 'Subscribed' : 'Subscribe'}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Video Stats */}
@@ -430,6 +550,15 @@ function VideoPlayer() {
                 <ThumbsUp className={isVideoLiked ? 'fill-current' : ''} size={20} />
                 <span>{video.likes || 0} likes</span>
               </button>
+              {userData && (
+                <button
+                  onClick={() => setShowPlaylistModal(true)}
+                  className={`flex items-center gap-2 ${subTextClass} hover:text-purple-500 transition-colors`}
+                >
+                  <ListPlus size={20} />
+                  <span>Save</span>
+                </button>
+              )}
               <div className="flex items-center gap-2">
                 <Calendar className={subTextClass} size={20} />
                 <span className={subTextClass}>{formatDate(video.createdAt)}</span>
@@ -595,6 +724,88 @@ function VideoPlayer() {
                 className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add the Playlist Modal */}
+      {showPlaylistModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`${cardClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-lg font-semibold ${textClass}`}>Save to...</h3>
+              <button
+                onClick={() => setShowPlaylistModal(false)}
+                className={`${subTextClass} hover:text-gray-400 transition-colors`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {playlistError && (
+              <p className="text-red-500 mb-4">{playlistError}</p>
+            )}
+
+            {loadingPlaylists ? (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : playlists.length === 0 ? (
+              <div className="text-center py-4">
+                <p className={`${subTextClass} mb-4`}>No playlists found</p>
+                <button
+                  onClick={() => {
+                    setShowPlaylistModal(false);
+                    navigate('/playlists');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors mx-auto"
+                >
+                  <Plus size={20} />
+                  Create New Playlist
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {playlists.map((playlist) => {
+                  const isInPlaylist = playlist.videos?.includes(video._id);
+                  return (
+                    <button
+                      key={playlist._id}
+                      onClick={() => !isInPlaylist && handleAddToPlaylist(playlist._id)}
+                      disabled={addingToPlaylist === playlist._id || isInPlaylist}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg ${
+                        isInPlaylist
+                          ? 'bg-purple-500 text-white'
+                          : `${cardClass} hover:bg-purple-500 hover:text-white`
+                      } transition-colors ${addingToPlaylist === playlist._id ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ListPlus size={20} />
+                        <span className="font-medium">{playlist.name}</span>
+                      </div>
+                      {addingToPlaylist === playlist._id ? (
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : isInPlaylist ? (
+                        <Check size={20} />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowPlaylistModal(false);
+                  navigate('/playlists');
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-purple-500 hover:text-purple-600 transition-colors"
+              >
+                <Plus size={20} />
+                Create New Playlist
               </button>
             </div>
           </div>

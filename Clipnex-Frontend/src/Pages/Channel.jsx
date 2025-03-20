@@ -88,10 +88,10 @@ function Channel() {
         isSubscribed: !prev.isSubscribed
       }));
 
-      // Update subscribers count
+      // Update subscribers count based on the new subscription status
       setSubscribers(prev => ({
         ...prev,
-        total: prev.total + (response.data.message.includes('Subscribed') ? 1 : -1)
+        total: prev.total + (channel.isSubscribed ? -1 : 1)
       }));
 
       // Fetch updated subscribers list
@@ -152,7 +152,7 @@ function Channel() {
     <div className={`min-h-screen ${containerClass} pr-[15%]`}>
       {/* Cover Image */}
       <div className="relative h-48 md:h-64 w-full">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50">
+        <div className="absolute inset-0">
           <img
             src={channel.coverImage}
             alt="Channel Cover"
@@ -163,124 +163,127 @@ function Channel() {
               e.target.onerror = null;
             }}
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50"></div>
         </div>
       </div>
 
       {/* Channel Info Section */}
-      <div className={`relative ${cardClass} mx-4 -mt-16 rounded-lg shadow-xl p-6`}>
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-          {/* Avatar */}
-          <div className="w-32 h-32 rounded-full ring-4 ring-purple-500 bg-gray-200 flex items-center justify-center overflow-hidden">
-            {channel.avatar ? (
-              <img
-                src={channel.avatar}
-                alt={channel.username || channel.fullname}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error('Error loading avatar:', e);
-                  e.target.src = '';
-                  e.target.onerror = null;
-                }}
-              />
-            ) : (
-              <User className={subTextClass} size={48} />
-            )}
-          </div>
-
-          {/* Channel Details */}
-          <div className="flex-grow">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className={`text-3xl font-bold ${textClass} mb-2`}>
-                  {channel.fullname || channel.username}
-                </h1>
-                {channel.username && (
-                  <p className={`text-lg ${subTextClass} mb-4`}>
-                    @{channel.username}
-                  </p>
-                )}
-              </div>
-
-              {currentUser && currentUser.username !== channel.username && (
-                <button 
-                  onClick={handleSubscribe}
-                  disabled={subscribing}
-                  className={`${
-                    channel.isSubscribed 
-                      ? 'bg-gray-600 hover:bg-gray-700' 
-                      : buttonClass
-                  } text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50`}
-                >
-                  {subscribing ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  ) : (
-                    <>
-                      {channel.isSubscribed ? <Bell size={20} /> : <Users size={20} />}
-                      {channel.isSubscribed ? 'Subscribed' : 'Subscribe'}
-                    </>
-                  )}
-                </button>
+      <div className="relative z-10 max-w-7xl mx-auto px-4">
+        <div className={`${cardClass} -mt-16 rounded-lg shadow-xl p-6`}>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            {/* Avatar */}
+            <div className="w-32 h-32 rounded-full ring-4 ring-purple-500 bg-gray-200 flex items-center justify-center overflow-hidden">
+              {channel.avatar ? (
+                <img
+                  src={channel.avatar}
+                  alt={channel.username || channel.fullname}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Error loading avatar:', e);
+                    e.target.src = '';
+                    e.target.onerror = null;
+                  }}
+                />
+              ) : (
+                <User className={subTextClass} size={48} />
               )}
             </div>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-              <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
-                <div className="flex items-center gap-2">
-                  <Users className={`${subTextClass}`} size={20} />
-                  <span className={`${textClass} font-semibold`}>{subscribers.total}</span>
+
+            {/* Channel Details */}
+            <div className="flex-grow">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h1 className={`text-3xl font-bold ${textClass} mb-2`}>
+                    {channel.fullname || channel.username}
+                  </h1>
+                  {channel.username && (
+                    <p className={`text-lg ${subTextClass} mb-4`}>
+                      @{channel.username}
+                    </p>
+                  )}
                 </div>
-                <p className={`${subTextClass} text-sm mt-1`}>Subscribers</p>
+
+                {currentUser && currentUser.username !== channel.username && (
+                  <button 
+                    onClick={handleSubscribe}
+                    disabled={subscribing}
+                    className={`${
+                      channel.isSubscribed 
+                        ? 'bg-gray-600 hover:bg-gray-700' 
+                        : buttonClass
+                    } text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 whitespace-nowrap`}
+                  >
+                    {subscribing ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        {channel.isSubscribed ? <Bell size={20} /> : <Users size={20} />}
+                        {channel.isSubscribed ? 'Subscribed' : 'Subscribe'}
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               
-              <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
-                <div className="flex items-center gap-2">
-                  <Video className={`${subTextClass}`} size={20} />
-                  <span className={`${textClass} font-semibold`}>{videos.length}</span>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
+                  <div className="flex items-center gap-2">
+                    <Users className={subTextClass} size={20} />
+                    <span className={`${textClass} font-semibold`}>{subscribers.total}</span>
+                  </div>
+                  <p className={`${subTextClass} text-sm mt-1`}>Subscribers</p>
                 </div>
-                <p className={`${subTextClass} text-sm mt-1`}>Videos</p>
-              </div>
+                
+                <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
+                  <div className="flex items-center gap-2">
+                    <Video className={subTextClass} size={20} />
+                    <span className={`${textClass} font-semibold`}>{videos.length}</span>
+                  </div>
+                  <p className={`${subTextClass} text-sm mt-1`}>Videos</p>
+                </div>
 
-              <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
-                <div className="flex items-center gap-2">
-                  <Users className={`${subTextClass}`} size={20} />
-                  <span className={`${textClass} font-semibold`}>{channel.channelsSubscribedToCount}</span>
+                <div className={`${cardClass} p-4 rounded-lg border ${borderClass}`}>
+                  <div className="flex items-center gap-2">
+                    <Users className={subTextClass} size={20} />
+                    <span className={`${textClass} font-semibold`}>{channel.channelsSubscribedToCount}</span>
+                  </div>
+                  <p className={`${subTextClass} text-sm mt-1`}>Subscribed</p>
                 </div>
-                <p className={`${subTextClass} text-sm mt-1`}>Subscribed</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Videos Section */}
-      <div className="mx-4 mt-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-2xl font-bold ${textClass}`}>Videos</h2>
-          <div className="flex items-center gap-2">
-            <Calendar className={subTextClass} size={20} />
-            <span className={subTextClass}>Latest</span>
+        {/* Videos Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className={`text-2xl font-bold ${textClass}`}>Videos</h2>
+            <div className="flex items-center gap-2">
+              <Calendar className={subTextClass} size={20} />
+              <span className={subTextClass}>Latest</span>
+            </div>
           </div>
+
+          {videos.length === 0 ? (
+            <div className={`text-center py-16 ${cardClass} rounded-lg border ${borderClass}`}>
+              <Video className={`mx-auto ${subTextClass} mb-4`} size={48} />
+              <p className={`${textClass} text-lg font-semibold mb-2`}>No videos yet</p>
+              <p className={subTextClass}>This channel hasn't uploaded any videos</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videos.map((video) => (
+                <VideoCard
+                  key={video._id}
+                  video={video}
+                  theme={theme}
+                  onVideoClick={() => navigate(`/video/${video._id}`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {videos.length === 0 ? (
-          <div className={`text-center py-16 ${cardClass} rounded-lg border ${borderClass}`}>
-            <Video className={`mx-auto ${subTextClass} mb-4`} size={48} />
-            <p className={`${textClass} text-lg font-semibold mb-2`}>No videos yet</p>
-            <p className={subTextClass}>This channel hasn't uploaded any videos</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videos.map((video) => (
-              <VideoCard
-                key={video._id}
-                video={video}
-                theme={theme}
-                onVideoClick={() => navigate(`/video/${video._id}`)}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

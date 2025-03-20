@@ -1,10 +1,4 @@
-import axios from "axios";
-
-// Create an axios instance with default config
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true,
-});
+import { api } from './api';
 
 // Get all videos
 export const getAllVideos = async () => {
@@ -28,33 +22,31 @@ export const getAllVideos = async () => {
   }
 };
 
-// Get video by ID
+// Get video details by ID
 export const getVideoDetails = async (videoId) => {
   try {
     const response = await api.get(`/videos/get-video/${videoId}`);
     console.log("Video details response:", response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      "Error fetching video:",
-      error.response?.data || error.message
-    );
-    throw error.response?.data || error;
+    console.error("Error fetching video details:", error);
+    throw error;
   }
 };
 
-// Upload video
-export const uploadVideo = async (formData, accessToken) => {
+// Upload a new video
+export const uploadVideo = async (formData) => {
   try {
     const response = await api.post("/videos/upload-video", formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${accessToken}`,
-      },
+        "Content-Type": "multipart/form-data"
+      }
     });
+    console.log("Upload response:", response.data);
     return response.data;
   } catch (error) {
-    throw error.response?.data || error;
+    console.error("Error uploading video:", error);
+    throw error;
   }
 };
 
@@ -108,21 +100,33 @@ export const getUserDetails = async (username) => {
   }
 };
 
+// Get channel profile
+export const getChannelProfile = async (username) => {
+  try {
+    // Get the channel profile using username
+    const response = await api.get(`/users/c/${username}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Channel profile response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching channel profile:", error);
+    throw error;
+  }
+};
+
 // Update video views
 export const updateVideoViews = async (videoId) => {
   try {
     console.log("Making request to update views for video:", videoId);
     const response = await api.patch(`/videos/views/${videoId}`);
     console.log("Update views response:", response.data);
-
-    if (!response.data || !response.data.data) {
-      throw new Error("Invalid response from server");
-    }
-
     return response.data;
   } catch (error) {
-    console.error("Error in updateVideoViews:", error.response?.data || error);
-    throw error.response?.data || error;
+    console.error("Error updating video views:", error);
+    throw error;
   }
 };
 
@@ -131,32 +135,58 @@ export const getChannelVideos = async (username) => {
   try {
     const response = await api.get(`/users/channel/${username}`);
     console.log("Channel videos response:", response.data);
-
-    if (!response.data || !response.data.data) {
-      throw new Error("No videos found for this channel");
-    }
-
-    // Process video data to ensure consistent format
-    const videos = response.data.data.videos || [];
-    const processedVideos = videos.map(video => ({
-      ...video,
-      duration: video.duration ? Number(video.duration) : 0,
-      views: video.views || 0,
-      likes: video.likes || 0,
-      createdBy: {
-        _id: video.owner?._id || video.owner,
-        username: video.owner?.username || username,
-        fullname: video.owner?.fullname || username,
-        avatar: video.owner?.avatar || "",
-      }
-    }));
-
-    return {
-      statusCode: response.data.statusCode,
-      data: processedVideos
-    };
+    return response.data;
   } catch (error) {
     console.error("Error fetching channel videos:", error);
+    throw error;
+  }
+};
+
+// Get channel stats
+export const getChannelStats = async () => {
+  try {
+    const response = await api.get('/dashboard/get-channel-stats');
+    console.log('Channel stats response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching channel stats:', error);
+    throw error;
+  }
+};
+
+// Get our channel videos
+export const getOurChannelVideos = async () => {
+  try {
+    const response = await api.get('/dashboard/get-channel-videos-our');
+    console.log('Our channel videos response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching our channel videos:', error);
+    throw error;
+  }
+};
+
+// Get channel videos by name
+export const getChannelVideosByName = async (channelName) => {
+  try {
+    const response = await api.get(`/dashboard/s/${channelName}`);
+    console.log('Channel videos response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching channel videos by name:', error);
+    throw error;
+  }
+};
+
+// Delete video
+export const deleteVideo = async (videoId) => {
+  try {
+    console.log('Deleting video:', videoId);
+    const response = await api.post(`/videos/delete-video/${videoId}`);
+    console.log('Delete video response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting video:', error);
     throw error;
   }
 };

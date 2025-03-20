@@ -5,6 +5,7 @@ import { Provider } from 'react-redux'
 import store from './Store/store.js'
 import Home from "./Pages/Home.jsx";
 import Playlists from "./Pages/Playlists.jsx";
+import PlaylistView from "./Pages/PlaylistView.jsx";
 import YourVideos from "./Pages/YourVideos.jsx";
 import History from "./Pages/History.jsx";
 import Liked from "./Pages/Liked.jsx";
@@ -44,23 +45,27 @@ const router = createBrowserRouter([
       },
       {
         path: "/playlists",
-        element: <Playlists />,
+        element: <ProtectedRoute><Playlists /></ProtectedRoute>,
+      },
+      {
+        path: "/playlist/:playlistId",
+        element: <ProtectedRoute><PlaylistView /></ProtectedRoute>,
       },
       {
         path: "/yourvideos",
-        element: <YourVideos />,
+        element: <ProtectedRoute><YourVideos /></ProtectedRoute>,
       },
       {
         path: "/history",
-        element: <History />,
+        element: <ProtectedRoute><History /></ProtectedRoute>,
       },
       {
         path: "/liked",
-        element: <Liked />,
+        element: <ProtectedRoute><Liked /></ProtectedRoute>,
       },
       {
         path: "/youraccount",
-        element: <YourAccount />,
+        element: <ProtectedRoute><YourAccount /></ProtectedRoute>,
       },
       {
         path: "/support",
@@ -68,7 +73,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/settings",
-        element: <Settings />,
+        element: <ProtectedRoute><Settings /></ProtectedRoute>,
       },
       {
         path: "/login",
@@ -80,7 +85,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/dashboard",
-        element: <YourAccount />,
+        element: <ProtectedRoute><YourAccount /></ProtectedRoute>,
       },
       {
         path: "/search",

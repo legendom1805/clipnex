@@ -5,10 +5,15 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { isValidObjectId } from "mongoose";
+import { Video } from "../models/video.model.js";
 
 const options = {
   httpOnly: true,
-  secure: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  path: '/',
+  domain: process.env.NODE_ENV === 'production' ? process.env.DOMAIN : 'localhost'
 };
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -176,58 +181,62 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-
-  if (!incomingRefreshToken) {
-    throw new apiError(401, "Unauthorized Request");
-  }
-
   try {
+    // Get refresh token from cookies or body
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!incomingRefreshToken) {
+      throw new apiError(401, "Refresh token is missing. Please login again.");
+    }
+
+    // Verify the refresh token
     const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
 
+    // Find the user
     const user = await User.findById(decodedToken?._id);
 
     if (!user) {
-      throw new apiError(401, "Invalied Refresh Token");
+      throw new apiError(401, "Invalid refresh token. User not found.");
     }
 
+    // Check if the refresh token matches the one stored in the database
     if (incomingRefreshToken !== user.refreshToken) {
-      throw new apiError(401, "Refresh token is expired or used");
+      throw new apiError(401, "Refresh token has expired or been used. Please login again.");
     }
 
-    const { accessToken, newRefreshToken } =
-      await generateAccessAndRefreshTokens(user._id);
+    // Generate new tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
-    if (!newRefreshToken || !accessToken) {
-      console.error("Tokens not returned properly:", {
-        accessToken,
-        newRefreshToken,
-      });
-      throw new apiError(500, "Failed to refresh tokens");
-    }
-
-    console.log(newRefreshToken);
-
+    // Set the new tokens as cookies
     return res
       .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("accessToken", accessToken, {
+        ...options,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...options,
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      })
       .json(
         new apiResponse(
           200,
-          { accessToken, refreshToken: newRefreshToken },
-          "Access token refreshed"
+          { accessToken, refreshToken },
+          "Access token refreshed successfully"
         )
       );
   } catch (error) {
-    throw new apiError(
-      401,
-      error?.message || "Catch Block : Invalid Refresh token"
-    );
+    // Clear the cookies if there's an error
+    res.clearCookie("accessToken", options);
+    res.clearCookie("refreshToken", options);
+    
+    if (error instanceof jwt.JsonWebTokenError) {
+      throw new apiError(401, "Invalid refresh token. Please login again.");
+    }
+    throw error;
   }
 });
 
@@ -504,6 +513,62 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, user[0], "Watch history fetched successfully"));
 });
 
+const addToWatchHistory = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+    throw new apiError(400, "Invalid Video ID");
+  }
+
+  // Check if video exists
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new apiError(404, "Video not found");
+  }
+
+  // Add video to watch history if not already present
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $addToSet: { watchHistory: videoId } // $addToSet prevents duplicates
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new apiError(500, "Failed to update watch history");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, user, "Video added to watch history successfully"));
+});
+
+const removeFromWatchHistory = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+    throw new apiError(400, "Invalid Video ID");
+  }
+
+  // Remove video from watch history
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $pull: { watchHistory: videoId } // $pull removes the specified value from the array
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new apiError(500, "Failed to update watch history");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, user, "Video removed from watch history successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -516,4 +581,6 @@ export {
   updateCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  addToWatchHistory,
+  removeFromWatchHistory,
 };

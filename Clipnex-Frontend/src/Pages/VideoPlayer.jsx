@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getVideoDetails, getUserDetails, updateVideoViews } from '../services/video.service';
 import { getVideoComments, addVideoComment, deleteComment } from '../Database/comment_services';
-import { toggleVideoLike, toggleCommentLike, getLikedVideos } from '../services/like.service';
+import { toggleVideoLike, toggleCommentLike, getLikedVideos, getVideoLikes } from '../services/like.service';
 import { toggleSubscription, getChannelSubscribers } from '../services/subscription.service';
 import { getUserPlaylists, addVideoToPlaylist } from '../services/playlist.service';
 import { User, ThumbsUp, Eye, Calendar, Clock, Send, Trash2, X, Heart, Bell, Users, ListPlus, Plus, Check } from 'lucide-react';
 import { formatDuration, formatRelativeTime } from '../utils/formatDuration';
+import { fetchLikedVideos, toggleLike } from '../Store/likeSlice';
 
 function VideoPlayer() {
   const { videoId } = useParams();
+  const dispatch = useDispatch();
   const authState = useSelector(state => state.auth);
   const { theme, user } = authState;
+  const likedVideos = useSelector(state => state.likes.likedVideos);
   // Get the actual user data from the nested structure
   const userData = user?.data;
   console.log('User data:', userData); // Log the actual user data
@@ -33,6 +36,7 @@ function VideoPlayer() {
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
   const [addingToPlaylist, setAddingToPlaylist] = useState(null);
   const [playlistError, setPlaylistError] = useState(null);
+  const [totalLikes, setTotalLikes] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,8 +59,12 @@ function VideoPlayer() {
         // Set video data first
         setVideo(videoData);
         
-        // If user is logged in, check subscription status
+        // Set initial total likes from video data
+        setTotalLikes(videoData.likes || 0);
+        
+        // If user is logged in, check subscription status and likes
         if (userData && videoData.createdBy?._id) {
+          // Check subscription status
           const subscribersResponse = await getChannelSubscribers(videoData.createdBy._id);
           console.log('Subscribers response:', subscribersResponse);
           
@@ -74,10 +82,11 @@ function VideoPlayer() {
               }
             }));
           }
+
+          // Fetch liked videos from Redux store
+          await dispatch(fetchLikedVideos());
         }
 
-        // Set initial like state
-        setIsVideoLiked(videoData.isLiked || false);
         setError(null);
       } catch (err) {
         console.error('Error in fetchVideoAndCreator:', err);
@@ -91,27 +100,32 @@ function VideoPlayer() {
     if (videoId) {
       fetchVideoAndCreator();
     }
-  }, [videoId, userData]);
+  }, [videoId, userData, dispatch]);
 
+  // Update isVideoLiked when likedVideos changes
   useEffect(() => {
-    const fetchLikes = async () => {
-      if (!userData) return;
-      try {
-        const response = await getLikedVideos();
-        console.log('Liked videos response:', response);
-        
-        // Handle both possible response structures
-        const likedVideos = Array.isArray(response) ? response : 
-                          Array.isArray(response.data) ? response.data : [];
-        
-        setIsVideoLiked(likedVideos.some(v => v._id === videoId));
-      } catch (err) {
-        console.error('Error fetching likes:', err);
-        setIsVideoLiked(false);
+    const initializeLikeState = async () => {
+      if (userData && videoId) {
+        try {
+          // Fetch liked videos and update like state
+          await dispatch(fetchLikedVideos());
+          const isLiked = likedVideos.includes(videoId);
+          setIsVideoLiked(isLiked);
+          
+          // Fetch and update likes count
+          const likesCount = await getVideoLikes(videoId);
+          setTotalLikes(likesCount);
+          setVideo(prev => ({
+            ...prev,
+            likes: likesCount
+          }));
+        } catch (err) {
+          console.error('Error initializing like state:', err);
+        }
       }
     };
 
-    fetchLikes();
+    initializeLikeState();
   }, [videoId, userData]);
 
   useEffect(() => {
@@ -251,20 +265,20 @@ function VideoPlayer() {
     }
 
     try {
-      const response = await toggleVideoLike(videoId);
+      // Update the backend and Redux store
+      const response = await dispatch(toggleLike(videoId)).unwrap();
       console.log('Video like response:', response);
       
-      if (response && response.data) {
-        // Update the video state with the new like count and status
-        setVideo(prev => ({
-          ...prev,
-          likes: response.data.likes,
-          isLiked: response.data.isLiked
-        }));
-        
-        // Update the like state based on the response
-        setIsVideoLiked(response.data.isLiked);
-      }
+      // Update the like state based on the response
+      setIsVideoLiked(response.isLiked);
+      
+      // Fetch updated likes count from the backend
+      const updatedLikesCount = await getVideoLikes(videoId);
+      setTotalLikes(updatedLikesCount);
+      setVideo(prev => ({
+        ...prev,
+        likes: updatedLikesCount
+      }));
     } catch (err) {
       console.error('Error toggling video like:', err);
       setError(err.response?.data?.message || 'Failed to like video');
@@ -505,8 +519,8 @@ function VideoPlayer() {
                 onClick={handleVideoLike}
                 className={`flex items-center gap-2 ${isVideoLiked ? 'text-purple-500 hover:text-purple-600' : `${subTextClass} hover:text-purple-500`} transition-colors`}
               >
-                <ThumbsUp className={isVideoLiked ? 'fill-current' : ''} size={20} />
-                <span>{video.likes || 0} likes</span>
+                <ThumbsUp className={isVideoLiked ? 'fill-current text-purple-500' : ''} size={20} />
+                <span className={isVideoLiked ? 'text-purple-500' : ''}>{totalLikes} likes</span>
               </button>
               {userData && (
                 <button

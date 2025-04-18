@@ -3,6 +3,7 @@ import authSlice from "./authSlice.js";
 import videoSlice from "./videoSlice.js";
 import userSlice from "../store/userSlice.js";
 import searchSlice from './searchSlice.js';
+import likeSlice from './likeSlice.js';
 
 
 const store = configureStore({
@@ -10,7 +11,8 @@ const store = configureStore({
     auth: authSlice,
     videos: videoSlice,
     user: userSlice,
-    search: searchSlice
+    search: searchSlice,
+    likes: likeSlice
   }
 });
 

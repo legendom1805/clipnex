@@ -7,6 +7,7 @@ import {
   addVideoToPlaylist,
   removeVideofromPlaylist,
   updatePlaylist,
+  deletePlaylist,
 } from "../controllers/playlist.controller.js";
 const router = Router();
 
@@ -20,4 +21,5 @@ router
   .route("/remove-video/:playlistId/:videoId")
   .patch(verifyJWT, removeVideofromPlaylist);
 router.route("/update-playlist/:playlistId").patch(verifyJWT, updatePlaylist);
+router.route("/delete-playlist/:playlistId").delete(verifyJWT, deletePlaylist);
 export default router;

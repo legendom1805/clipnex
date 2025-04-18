@@ -30,7 +30,7 @@ const uploadOnCloudinary = async (localfilepath) => {
 
     // Check file size (100MB limit for videos, 10MB for images)
     const isVideo = localfilepath.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/i);
-    const maxSize = isVideo ? 100 : 10; // MB
+    const maxSize = isVideo ? 500 : 10; // MB
     
     if (fileSizeInMB > maxSize) {
       console.error(`File size ${fileSizeInMB.toFixed(2)}MB exceeds limit of ${maxSize}MB`);

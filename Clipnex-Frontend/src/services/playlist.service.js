@@ -16,7 +16,9 @@ export const createPlaylist = async (playlistData) => {
 export const getUserPlaylists = async (userId) => {
   try {
     console.log("Fetching playlists for user:", userId);
-    const response = await api.get(`/playlist/get-user-playlists/${userId}`);
+    const response = await api.get(`/playlist/get-user-playlists`, {
+      params: { userId }
+    });
     console.log("User playlists response:", response.data);
     return response.data;
   } catch (error) {
@@ -56,7 +58,7 @@ export const getPlaylistById = async (playlistId) => {
 // Add video to playlist
 export const addVideoToPlaylist = async (playlistId, videoId) => {
   try {
-    const response = await api.post(`/playlist/add-video/${playlistId}/${videoId}`);
+    const response = await api.patch(`/playlist/add-video/${playlistId}/${videoId}`);
     console.log("Add video to playlist response:", response.data);
     return response.data;
   } catch (error) {
@@ -85,6 +87,18 @@ export const updatePlaylist = async (playlistId, updateData) => {
     return response.data;
   } catch (error) {
     console.error("Error updating playlist:", error);
+    throw error;
+  }
+};
+
+// Delete playlist
+export const deletePlaylist = async (playlistId) => {
+  try {
+    const response = await api.delete(`/playlist/delete-playlist/${playlistId}`);
+    console.log("Delete playlist response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting playlist:", error);
     throw error;
   }
 }; 

@@ -2,12 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PlayCircle, User } from 'lucide-react';
-import { updateVideoViews } from '../services/video.service';
+import { updateVideoViews, addToWatchHistory } from '../services/video.service';
 import { formatDuration, formatRelativeTime } from '../utils/formatDuration';
 
 function VideoCard({ video, theme, onVideoClick }) {
   const navigate = useNavigate();
-  const { theme: globalTheme } = useSelector(state => state.auth);
+  const { theme: globalTheme, user } = useSelector(state => state.auth);
+  // Get the actual user data from the nested structure
+  const userData = user?.data;
 
   const cardClass = theme === 'dark'
     ? 'bg-fadetext/25 hover:bg-gray-700'
@@ -37,20 +39,23 @@ function VideoCard({ video, theme, onVideoClick }) {
 
   const handleClick = async () => {
     try {
-      // Update views in the backend
+      // Update views
       await updateVideoViews(video._id);
       
-      // Update local view count immediately
-      if (onVideoClick) {
-        onVideoClick(video._id);
+      // Add to watch history if user is logged in
+      if (userData) {
+        await addToWatchHistory(video._id);
       }
       
       // Navigate to video page
       navigate(`/video/${video._id}`);
+      
+      // Call onVideoClick prop if provided
+      if (onVideoClick) {
+        onVideoClick(video);
+      }
     } catch (error) {
-      console.error('Error updating video views:', error);
-      // Still navigate even if view update fails
-      navigate(`/video/${video._id}`);
+      console.error('Error handling video click:', error);
     }
   };
 

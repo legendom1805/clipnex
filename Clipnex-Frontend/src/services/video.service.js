@@ -1,4 +1,5 @@
 import { api } from './api';
+import axios from 'axios';
 
 // Get all videos
 export const getAllVideos = async () => {
@@ -239,6 +240,40 @@ export const deleteVideo = async (videoId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting video:', error);
+    throw error;
+  }
+};
+
+export const addToWatchHistory = async (videoId) => {
+  try {
+    const response = await api.post(`/users/add-to-history/${videoId}`);
+    console.log('Add to watch history response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding video to watch history:', error);
+    throw error;
+  }
+};
+
+export const getWatchHistory = async () => {
+  try {
+    const response = await api.get('/users/watch-history');
+    console.log('Watch history response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching watch history:', error);
+    throw error;
+  }
+};
+
+export const removeFromWatchHistory = async (videoId) => {
+  try {
+    console.log('Removing video from watch history:', videoId);
+    const response = await api.delete(`/users/watch-history/${videoId}`);
+    console.log('Remove from watch history response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing video from watch history:', error);
     throw error;
   }
 };

@@ -10,7 +10,6 @@ function Playlists() {
   const userData = user?.data;
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPlaylist, setNewPlaylist] = useState({ name: '', description: '' });
   const [creating, setCreating] = useState(false);
@@ -28,6 +27,7 @@ function Playlists() {
     const fetchPlaylists = async () => {
       if (!userData?._id) {
         console.log('No user data found, skipping playlist fetch');
+        setLoading(false);
         return;
       }
       
@@ -36,11 +36,11 @@ function Playlists() {
         console.log('Fetching playlists for user:', userData._id);
         const response = await getUserPlaylists(userData._id);
         console.log('Playlists response:', response);
-        setPlaylists(response.data);
-        setError(null);
+        setPlaylists(response.data || []);
       } catch (err) {
         console.error('Error fetching playlists:', err);
-        setError(err.message || 'Failed to load playlists');
+        // Don't set error state, just set empty playlists
+        setPlaylists([]);
       } finally {
         setLoading(false);
       }
@@ -62,7 +62,8 @@ function Playlists() {
       setShowCreateModal(false);
       setNewPlaylist({ name: '', description: '' });
     } catch (err) {
-      setError(err.message || 'Failed to create playlist');
+      console.error('Failed to create playlist:', err);
+      // Don't show error to user, just log it
     } finally {
       setCreating(false);
     }
@@ -95,11 +96,7 @@ function Playlists() {
         </div>
 
         {/* Playlists Grid */}
-        {error ? (
-          <div className="text-center py-8">
-            <p className="text-red-500">{error}</p>
-          </div>
-        ) : playlists.length === 0 ? (
+        {playlists.length === 0 ? (
           <div className={`text-center py-16 ${cardClass} rounded-lg border ${borderClass}`}>
             <FolderPlus className={`mx-auto ${subTextClass} mb-4`} size={48} />
             <p className={`${textClass} text-lg font-semibold mb-2`}>No playlists yet</p>
@@ -140,51 +137,54 @@ function Playlists() {
 
       {/* Create Playlist Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${cardClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-lg font-semibold ${textClass}`}>Create New Playlist</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className={`${cardClass} p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 border-2 ${theme === 'dark' ? 'border-purple-500/50' : 'border-purple-500'}`}>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <FolderPlus className={`${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} size={24} />
+                <h3 className={`text-xl font-bold ${textClass}`}>Create New Playlist</h3>
+              </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className={`${subTextClass} hover:text-gray-400 transition-colors`}
+                className={`${subTextClass} hover:text-red-500 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700`}
               >
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleCreatePlaylist}>
+            <form onSubmit={handleCreatePlaylist} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label className={`block mb-2 ${textClass}`}>Name</label>
+                  <label className={`block mb-2 font-medium ${textClass}`}>Name</label>
                   <input
                     type="text"
                     value={newPlaylist.name}
                     onChange={(e) => setNewPlaylist(prev => ({ ...prev, name: e.target.value }))}
-                    className={`w-full px-4 py-2 border rounded-lg outline-none ${inputClass}`}
+                    className={`w-full px-4 py-3 border-2 rounded-lg outline-none focus:border-purple-500 transition-colors ${inputClass}`}
                     placeholder="Enter playlist name"
                   />
                 </div>
                 <div>
-                  <label className={`block mb-2 ${textClass}`}>Description</label>
+                  <label className={`block mb-2 font-medium ${textClass}`}>Description</label>
                   <textarea
                     value={newPlaylist.description}
                     onChange={(e) => setNewPlaylist(prev => ({ ...prev, description: e.target.value }))}
-                    className={`w-full px-4 py-2 border rounded-lg outline-none ${inputClass} min-h-[100px] resize-y`}
+                    className={`w-full px-4 py-3 border-2 rounded-lg outline-none focus:border-purple-500 transition-colors ${inputClass} min-h-[120px] resize-y`}
                     placeholder="Enter playlist description"
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-4 mt-6">
+              <div className="flex justify-end gap-4 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className={`px-4 py-2 rounded-lg border ${borderClass} ${textClass} hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+                  className={`px-6 py-2.5 rounded-lg border-2 ${borderClass} ${textClass} hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !newPlaylist.name.trim() || !newPlaylist.description.trim()}
-                  className={`px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                  className={`px-6 py-2.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-purple-500/20`}
                 >
                   {creating ? (
                     <>
@@ -194,7 +194,7 @@ function Playlists() {
                   ) : (
                     <>
                       <Plus size={20} />
-                      Create
+                      Create Playlist
                     </>
                   )}
                 </button>

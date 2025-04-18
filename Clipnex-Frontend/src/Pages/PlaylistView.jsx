@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { getPlaylistById, updatePlaylist, removeVideoFromPlaylist } from '../services/playlist.service';
-import { PlaySquare, Edit2, Trash2, Video, X, Save } from 'lucide-react';
+import { getPlaylistById, updatePlaylist, removeVideoFromPlaylist, deletePlaylist } from '../services/playlist.service';
+import { PlaySquare, Edit2, Trash2, Video, X, Save, AlertTriangle } from 'lucide-react';
 import VideoCard from '../Components/VideoCard';
 
 function PlaylistView() {
@@ -17,6 +17,8 @@ function PlaylistView() {
   const [editData, setEditData] = useState({ name: '', description: '' });
   const [updating, setUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showDeletePlaylistConfirm, setShowDeletePlaylistConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const containerClass = theme === 'dark' ? 'bg-darkbg' : 'bg-white';
   const textClass = theme === 'dark' ? 'text-white' : 'text-gray-900';
@@ -99,6 +101,19 @@ function PlaylistView() {
     }
   };
 
+  const handleDeletePlaylist = async () => {
+    try {
+      setDeleting(true);
+      await deletePlaylist(playlistId);
+      navigate('/playlists');
+    } catch (err) {
+      setError(err.message || 'Failed to delete playlist');
+    } finally {
+      setDeleting(false);
+      setShowDeletePlaylistConfirm(false);
+    }
+  };
+
   const isPlaylistOwner = userData?._id === playlist?.createdBy?._id;
 
   if (loading) {
@@ -151,48 +166,48 @@ function PlaylistView() {
                     className={`w-full px-4 py-2 border rounded-lg outline-none ${inputClass} min-h-[100px] resize-y`}
                     placeholder="Playlist description"
                   />
-                  <div className="flex justify-end gap-4 mt-4">
+                  <div className="flex justify-end gap-2 mt-2">
                     <button
                       type="button"
                       onClick={() => setEditing(false)}
-                      className={`px-4 py-2 rounded-lg border ${borderClass} ${textClass} hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+                      className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      Cancel
+                      <X size={20} />
                     </button>
                     <button
                       type="submit"
-                      disabled={updating || !editData.name.trim() || !editData.description.trim()}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50"
+                      disabled={updating}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
                     >
-                      {updating ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save size={20} />
-                          Save
-                        </>
-                      )}
+                      {updating ? <span className="animate-spin">⌛</span> : <Save size={20} />}
                     </button>
                   </div>
                 </form>
               ) : (
                 <div>
-                  <h1 className={`text-2xl font-bold ${textClass} mb-2`}>{playlist.name}</h1>
-                  <p className={`${subTextClass}`}>{playlist.description}</p>
+                  <h1 className={`text-2xl font-bold ${textClass}`}>{playlist.name}</h1>
+                  <p className={subTextClass}>{playlist.description}</p>
                 </div>
               )}
             </div>
-            {!editing && isPlaylistOwner && (
-              <button
-                onClick={() => setEditing(true)}
-                className={`${subTextClass} hover:text-purple-500 transition-colors`}
-              >
-                <Edit2 size={20} />
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {!editing && (
+                <>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <Edit2 size={20} className={subTextClass} />
+                  </button>
+                  <button
+                    onClick={() => setShowDeletePlaylistConfirm(true)}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <Trash2 size={20} className="text-red-500" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -245,6 +260,43 @@ function PlaylistView() {
           </div>
         )}
       </div>
+
+      {/* Delete Playlist Confirmation Modal */}
+      {showDeletePlaylistConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${cardClass} rounded-lg p-6 max-w-md w-full mx-4 shadow-lg border ${borderClass}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="text-red-500" size={24} />
+              <h3 className={`text-xl font-semibold ${textClass}`}>Delete Playlist</h3>
+            </div>
+            <p className={`mb-6 ${subTextClass}`}>
+              Are you sure you want to delete this playlist? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeletePlaylistConfirm(false)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeletePlaylist}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2"
+              >
+                {deleting ? (
+                  <span className="animate-spin">⌛</span>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

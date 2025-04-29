@@ -61,14 +61,13 @@ function History() {
     fetchHistory();
   }, [userData]);
 
-  const handleRemoveFromHistory = async (videoId) => {
+  const handleRemoveFromHistory = async (historyItem) => {
     try {
+      const videoId = historyItem._id;
       await removeFromWatchHistory(videoId);
-      // Remove the video from the local state
-      setHistory(prevHistory => prevHistory.filter(video => video._id !== videoId));
+      setHistory(history.filter(item => item._id !== videoId));
     } catch (error) {
       console.error('Error removing video from history:', error);
-      setError('Failed to remove video from history');
     }
   };
 
@@ -114,7 +113,7 @@ function History() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pr-[15%]">
       <h1 className="text-2xl font-bold mb-6">Watch History</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {history.map((video) => (
@@ -124,7 +123,7 @@ function History() {
               theme={theme}
             />
             <button
-              onClick={() => handleRemoveFromHistory(video._id)}
+              onClick={() => handleRemoveFromHistory(video)}
               className="absolute top-2 right-2 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
               title="Remove from history"
             >

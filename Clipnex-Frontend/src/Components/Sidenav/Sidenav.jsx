@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   ThumbsUpIcon,
   User,
+  Users,
 } from "lucide-react";
 
 function Sidenav() {
@@ -58,6 +59,10 @@ function Sidenav() {
             <PlaySquare />
             <span className="ml-2">Your Videos</span>
           </button>
+          <button className={getButtonClass("/community")} onClick={() => navigate("/community")}>
+            <Users/>
+            <span className="ml-2">Community</span>
+          </button>
         </div>
         <hr className={`${hrClass} my-8`} />
         <div className="flex flex-col w-[100%] mx-auto space-y-[14px]">
@@ -65,10 +70,10 @@ function Sidenav() {
             <History />
             <span className="ml-2">History</span>
           </button>
-          <button className={getButtonClass("/liked", false)} onClick={() => navigate("/liked")}>
+          {/* <button className={getButtonClass("/liked", false)} onClick={() => navigate("/liked")}>
             <ThumbsUpIcon />
             <span className="ml-2">Liked</span>
-          </button>
+          </button> */}
           <button className={getButtonClass("/youraccount", false)} onClick={() => navigate("/youraccount")}>
             <User />
             <span className="ml-2">Your Account</span>

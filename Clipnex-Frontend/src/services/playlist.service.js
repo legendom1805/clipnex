@@ -16,9 +16,7 @@ export const createPlaylist = async (playlistData) => {
 export const getUserPlaylists = async (userId) => {
   try {
     console.log("Fetching playlists for user:", userId);
-    const response = await api.get(`/playlist/get-user-playlists`, {
-      params: { userId }
-    });
+    const response = await api.get(`/playlist/get-user-playlists/${userId}`);
     console.log("User playlists response:", response.data);
     return response.data;
   } catch (error) {
@@ -70,7 +68,7 @@ export const addVideoToPlaylist = async (playlistId, videoId) => {
 // Remove video from playlist
 export const removeVideoFromPlaylist = async (playlistId, videoId) => {
   try {
-    const response = await api.delete(`/playlist/remove-video/${playlistId}/${videoId}`);
+    const response = await api.patch(`/playlist/remove-video/${playlistId}/${videoId}`);
     console.log("Remove video from playlist response:", response.data);
     return response.data;
   } catch (error) {

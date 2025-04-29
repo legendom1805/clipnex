@@ -21,6 +21,8 @@ import ProtectedRoute from "./Components/ProtectedRoute.jsx";
 import "./index.css";
 import App from "./App.jsx";
 import LoginPage from "./Pages/LoginPage.jsx";
+import Community from "./Pages/Community.jsx";
+import CreatePost from "./Pages/CreatePost.jsx";
 
 const router = createBrowserRouter([
   {
@@ -90,6 +92,14 @@ const router = createBrowserRouter([
       {
         path: "/search",
         element: <SearchResults />,
+      },
+      {
+        path: "/community",
+        element: <ProtectedRoute><Community /></ProtectedRoute>,
+      },
+      {
+        path: "/community/new",
+        element: <ProtectedRoute><CreatePost /></ProtectedRoute>,
       },
     ],
   },

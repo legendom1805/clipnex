@@ -160,7 +160,8 @@ const getVideobyId = asyncHandler(async (req, res) => {
         createdBy: {
           avatar: 1,
           fullname: 1,
-          username: 1
+          username: 1,
+          _id: 1,
         }
       }
     }
@@ -269,7 +270,7 @@ const getAllvideos = asyncHandler(async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 100,
       query = "",
       sortBy = "createdAt",
       sortType = "desc",
@@ -335,6 +336,7 @@ const getAllvideos = asyncHandler(async (req, res) => {
             avatar: 1,
             fullname: 1,
             username: 1,
+            _id: 1,
           },
         },
       },

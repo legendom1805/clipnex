@@ -46,7 +46,41 @@ export const getVideoDetails = async (videoId) => {
   try {
     const response = await api.get(`/videos/get-video/${videoId}`);
     console.log("Video details response:", response.data);
-    return response.data;
+
+    // Ensure we have video data
+    if (!response.data?.data) {
+      throw new Error('No video data received');
+    }
+
+    // Extract owner ID from the video data
+    const ownerId = response.data.data.owner?._id || 
+                   response.data.data.createdBy?._id || 
+                   response.data.data.owner || 
+                   response.data.data.userId;
+
+    if (!ownerId) {
+      console.error('No owner ID found in video data:', response.data.data);
+      throw new Error('Video creator information is missing');
+    }
+
+    // Process the video data
+    const videoData = {
+      ...response.data.data,
+      duration: response.data.data.duration || 0,
+      views: response.data.data.views || 0,
+      likes: response.data.data.likes || 0,
+      createdBy: {
+        _id: ownerId,
+        username: response.data.data.owner?.username || response.data.data.createdBy?.username || 'Unknown',
+        fullname: response.data.data.owner?.fullname || response.data.data.createdBy?.fullname || 'Unknown User',
+        avatar: response.data.data.owner?.avatar || response.data.data.createdBy?.avatar || "",
+        isSubscribed: false, // This will be updated by the VideoPlayer component
+        subscribersCount: response.data.data.owner?.subscribersCount || response.data.data.createdBy?.subscribersCount || 0
+      }
+    };
+
+    console.log("Processed video data:", videoData);
+    return { data: videoData };
   } catch (error) {
     console.error("Error fetching video details:", error);
     throw error;
@@ -269,7 +303,7 @@ export const getWatchHistory = async () => {
 export const removeFromWatchHistory = async (videoId) => {
   try {
     console.log('Removing video from watch history:', videoId);
-    const response = await api.delete(`/users/watch-history/${videoId}`);
+    const response = await api.delete(`/users/remove-from-history/${videoId}`);
     console.log('Remove from watch history response:', response.data);
     return response.data;
   } catch (error) {

@@ -9,6 +9,7 @@ import { getUserPlaylists, addVideoToPlaylist } from '../services/playlist.servi
 import { User, ThumbsUp, Eye, Calendar, Clock, Send, Trash2, X, Heart, Bell, Users, ListPlus, Plus, Check } from 'lucide-react';
 import { formatDuration, formatRelativeTime } from '../utils/formatDuration';
 import { fetchLikedVideos, toggleLike } from '../Store/likeSlice';
+import { toast } from 'react-hot-toast';
 
 function VideoPlayer() {
   const { videoId } = useParams();
@@ -56,6 +57,35 @@ function VideoPlayer() {
         console.log('Processed video data:', videoData);
         console.log('Creator data:', videoData.createdBy);
 
+        // Ensure createdBy data is properly structured
+        if (!videoData.createdBy || !videoData.createdBy._id) {
+          console.error('Missing creator data:', videoData);
+          
+          // Try to fetch creator data separately if we have a userId
+          if (videoData.userId) {
+            try {
+              const creatorResponse = await getUserDetails(videoData.userId);
+              if (creatorResponse && creatorResponse.data) {
+                videoData.createdBy = {
+                  _id: creatorResponse.data._id,
+                  username: creatorResponse.data.username,
+                  fullname: creatorResponse.data.fullname || creatorResponse.data.username,
+                  avatar: creatorResponse.data.avatar || "",
+                  isSubscribed: false,
+                  subscribersCount: 0
+                };
+              } else {
+                throw new Error('Video creator information is missing');
+              }
+            } catch (creatorErr) {
+              console.error('Error fetching creator details:', creatorErr);
+              throw new Error('Video creator information is missing');
+            }
+          } else {
+            throw new Error('Video creator information is missing');
+          }
+        }
+
         // Set video data first
         setVideo(videoData);
         
@@ -64,21 +94,35 @@ function VideoPlayer() {
         
         // If user is logged in, check subscription status and likes
         if (userData && videoData.createdBy?._id) {
-          // Check subscription status
-          const subscribersResponse = await getChannelSubscribers(videoData.createdBy._id);
-          console.log('Subscribers response:', subscribersResponse);
-          
-          if (subscribersResponse && subscribersResponse.data) {
-            const isUserSubscribed = subscribersResponse.data.subscribers?.some(
-              sub => sub._id === userData._id
-            ) || false;
+          try {
+            // Check subscription status
+            const subscribersResponse = await getChannelSubscribers(videoData.createdBy._id);
+            console.log('Subscribers response:', subscribersResponse);
             
-            // Update video with subscription status
+            if (subscribersResponse && subscribersResponse.data) {
+              const isUserSubscribed = subscribersResponse.data.subscribers?.some(
+                sub => sub._id === userData._id
+              ) || false;
+              
+              // Update video with subscription status
+              setVideo(prev => ({
+                ...prev,
+                createdBy: {
+                  ...prev.createdBy,
+                  isSubscribed: isUserSubscribed,
+                  subscribersCount: subscribersResponse.data.totalSubscribers || 0
+                }
+              }));
+            }
+          } catch (subErr) {
+            console.error('Error fetching subscription status:', subErr);
+            // Set default values if we can't fetch subscription status
             setVideo(prev => ({
               ...prev,
               createdBy: {
                 ...prev.createdBy,
-                isSubscribed: isUserSubscribed
+                isSubscribed: false,
+                subscribersCount: 0
               }
             }));
           }
@@ -139,8 +183,8 @@ function VideoPlayer() {
         const commentsData = await getVideoComments(videoId);
         console.log('Fetched comments:', commentsData);
         
-        // If we get a 400 error with "No comments", treat it as an empty list
-        if (commentsData?.error === 'No comments') {
+        // Handle empty comments array
+        if (!commentsData || commentsData.length === 0) {
           setComments([]);
           setCommentLikes({});
           setCommentError(null);
@@ -163,7 +207,7 @@ function VideoPlayer() {
       } catch (err) {
         console.error('Error fetching comments:', err);
         // If the error is "No comments", treat it as an empty list
-        if (err.response?.data?.includes('No comments')) {
+        if (err.response?.data?.includes('No comments') || err.response?.status === 400) {
           setComments([]);
           setCommentLikes({});
           setCommentError(null);
@@ -336,8 +380,12 @@ function VideoPlayer() {
       return;
     }
 
+    console.log('Video data:', video);
+    console.log('Channel data:', video?.createdBy);
+
     if (!video?.createdBy?._id) {
-      console.error('No channel ID found');
+      console.error('No channel ID found. Video data:', video);
+      toast.error('Unable to subscribe: Channel information not found');
       return;
     }
 
@@ -351,13 +399,28 @@ function VideoPlayer() {
         ...prev,
         createdBy: {
           ...prev.createdBy,
-          isSubscribed: !prev.createdBy.isSubscribed
+          isSubscribed: !prev.createdBy.isSubscribed,
+          subscribersCount: prev.createdBy.isSubscribed 
+            ? (prev.createdBy.subscribersCount || 1) - 1 
+            : (prev.createdBy.subscribersCount || 0) + 1
         }
       }));
 
+      // Fetch updated subscribers list to ensure accuracy
+      const subscribersResponse = await getChannelSubscribers(video.createdBy._id);
+      if (subscribersResponse && subscribersResponse.data) {
+        setVideo(prev => ({
+          ...prev,
+          createdBy: {
+            ...prev.createdBy,
+            subscribersCount: subscribersResponse.data.totalSubscribers || 0
+          }
+        }));
+      }
+
     } catch (err) {
       console.error('Error toggling subscription:', err);
-      setError('Failed to update subscription. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to update subscription. Please try again.');
     } finally {
       setSubscribing(false);
     }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import Logo2 from "../Logo2.jsx";
-import { useNavigate } from "react-router-dom";
-import { CircleUserIcon, SearchIcon, Upload, User } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { CircleUserIcon, SearchIcon, Upload, User, MessageSquare } from "lucide-react";
 import { checkAuthStatus } from "../../Store/authSlice";
 
 function Header() {
@@ -45,7 +45,7 @@ function Header() {
     : 'bg-gray-100 hover:bg-gray-200 text-gray-900';
 
   return (
-    <header className={`w-[100vw] p-3 border-b fixed backdrop-blur-sm transition-colors duration-200 ${headerClass}`}>
+    <header className={`z-20 w-[100vw] p-3 border-b fixed backdrop-blur-sm transition-colors duration-200 ${headerClass}`}>
       <nav className="navbar flex w-[95vw] mx-auto">
         <div 
           className="logo flex items-center cursor-pointer hover:opacity-80 transition-opacity" 
@@ -73,6 +73,13 @@ function Header() {
           >
             <Upload size={16} />
             <span>Upload</span>
+          </button>
+          <button 
+            className={`flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-sm transition-colors ml-2 ${buttonClass}`}
+            onClick={() => navigate("/community/new")}
+          >
+            <MessageSquare size={16} />
+            <span>New Post</span>
           </button>
         </div>
         <div className="user flex items-center">
@@ -119,6 +126,7 @@ function Header() {
             )}
           </div>
         </div>
+        
       </nav>
     </header>
   );

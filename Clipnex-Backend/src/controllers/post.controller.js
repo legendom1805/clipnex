@@ -106,4 +106,85 @@ const updatePost = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, updateContent, "Post updated successfully!"));
 });
 
-export { createPost, getUserPosts, updatePost };
+const deletePost = asyncHandler(async (req, res) => {
+  const { postId } = req.params;
+
+  if (!isValidObjectId(postId)) {
+    throw new apiError(400, "Invalid Post ID");
+  }
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    throw new apiError(404, "Post not found");
+  }
+
+  // Check if the user is the owner of the post
+  if (!post.owner.equals(req.user._id)) {
+    throw new apiError(403, "You are not authorized to delete this post");
+  }
+
+  const deletedPost = await Post.findByIdAndDelete(postId);
+
+  if (!deletedPost) {
+    throw new apiError(500, "Failed to delete post");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, deletedPost, "Post deleted successfully"));
+});
+
+const getAllPosts = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = req.query;
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
+
+  const posts = await Post.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              username: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: "$owner",
+    },
+    {
+      $sort: sort,
+    },
+    {
+      $skip: skip,
+    },
+    {
+      $limit: parseInt(limit),
+    },
+  ]);
+
+  const totalPosts = await Post.countDocuments();
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, {
+        posts,
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalPosts / parseInt(limit)),
+        totalPosts,
+      }, "Posts fetched successfully")
+    );
+});
+
+export { createPost, getUserPosts, updatePost, deletePost, getAllPosts };

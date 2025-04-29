@@ -7,6 +7,7 @@ import Sidenav from "./Components/Sidenav/Sidenav";
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { checkAuthStatus } from './Store/authSlice';
+import Community from './Pages/Community';
 
 function App() {
   const dispatch = useDispatch();

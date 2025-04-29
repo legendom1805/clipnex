@@ -1,10 +1,4 @@
-import axios from "axios";
-
-// Create an axios instance with default config
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true,
-});
+import { api } from './api';
 
 // Toggle subscription (subscribe/unsubscribe)
 export const toggleSubscription = async (channelId) => {
@@ -25,7 +19,7 @@ export const getChannelSubscribers = async (channelId) => {
     console.log("Channel subscribers response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching subscribers:", error);
+    console.error("Error fetching channel subscribers:", error);
     throw error;
   }
 };
